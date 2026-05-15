@@ -1,4 +1,5 @@
 mlx-audio
+webrtcvad
 misaki
 num2words
 spacy

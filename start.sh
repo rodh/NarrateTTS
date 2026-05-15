@@ -1,27 +1,40 @@
 #!/usr/bin/env bash
 set -e
 
-echo "Setting up NarrateTTS..."
-
-# Create virtual environment
-python3 -m venv .venv
+# Check for venv
+if [ ! -d .venv ]; then
+    echo "Virtual environment not found. Run ./install.sh first."
+    exit 1
+fi
 source .venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+cleanup() {
+    echo ""
+    echo "Shutting down..."
+    [ -n "$TTS_PID" ] && kill "$TTS_PID" 2>/dev/null
+    [ -n "$APP_PID" ] && kill "$APP_PID" 2>/dev/null
+    wait 2>/dev/null
+    echo "Done."
+}
+trap cleanup EXIT INT TERM
 
-# Check for ffmpeg
-if ! command -v ffmpeg &> /dev/null; then
-    echo "Warning: ffmpeg not found. Audio will be saved as WAV instead of MP3."
-    echo "Install with: brew install ffmpeg"
-fi
+# Start mlx-audio TTS server in background
+echo "Starting Kokoro TTS server on http://localhost:8100..."
+python -m mlx_audio.server --host 0.0.0.0 --port 8100 &
+TTS_PID=$!
+sleep 3
 
-# Default: run server
+# Start main app
+export TTS_SERVICE_URL=http://localhost:8100
+echo "Starting NarrateTTS on http://localhost:8090..."
+uvicorn app.main:app --host 0.0.0.0 --port 8090 &
+APP_PID=$!
+
 echo ""
-echo "Starting server on http://lumi.lab:8090"
-echo "         ./start.sh                  (start server)"
-echo "         ./start.sh tts              (also start TTS service on :8100)"
+echo "NarrateTTS is running:"
+echo "  App:  http://localhost:8090"
+echo "  TTS:  http://localhost:8100"
 echo ""
+echo "Press Ctrl+C to stop."
 
-# Run the server
-exec uvicorn app.main:app --host 127.0.0.1 --port 8090
+wait

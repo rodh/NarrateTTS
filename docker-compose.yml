@@ -1,16 +1,4 @@
 services:
-  tts-service:
-    build: ./tts-service
-    ports:
-      - "8100:8100"
-    volumes:
-      - ./audio:/app/audio
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PIPER_MODELS_DIR=/app/models
-      - TTS_VOICE=en_US-lessac-medium
-      - TTS_OUTPUT_DIR=/app/audio
-
   narrate-tts:
     build: .
     ports:
@@ -20,4 +8,3 @@ services:
       - ./index.html:/app/index.html
     environment:
       - PYTHONUNBUFFERED=1
-      - TTS_SERVICE_URL=http://tts-service:8100

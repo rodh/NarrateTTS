@@ -25,6 +25,17 @@ if [ -z "$PYTHON" ]; then
     exit 1
 fi
 
+# Check for espeak-ng (required by phonemizer for text processing)
+if ! command -v espeak-ng &> /dev/null; then
+    echo "Installing espeak-ng..."
+    if command -v brew &> /dev/null; then
+        brew install espeak-ng
+    else
+        echo "Error: espeak-ng not found. Install with: brew install espeak-ng"
+        exit 1
+    fi
+fi
+
 # Check for ffmpeg (optional, for WAV→MP3 conversion in local mode)
 if ! command -v ffmpeg &> /dev/null; then
     echo "Note: ffmpeg not found (optional). Without it, local engine saves WAV instead of MP3."

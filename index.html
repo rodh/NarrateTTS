@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NarrateTTS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #0f0f0f; color: #e5e5e5; }
+        .item-card { transition: background 0.15s; }
+        .item-card:hover { background: #1a1a1a; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        .waveform { display: flex; align-items: center; gap: 2px; height: 40px; }
+        .waveform span { display: block; width: 3px; background: #22c55e; border-radius: 2px; transition: height 0.1s; }
+        .status-queued { color: #f59e0b; }
+        .status-processing { color: #3b82f6; }
+        .status-completed { color: #22c55e; }
+        .status-error { color: #ef4444; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-gray-800">
+        <h1 class="text-lg font-semibold tracking-tight">NarrateTTS</h1>
+        <div class="flex items-center gap-3">
+            <input id="search" type="text" placeholder="Search..." class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm w-36 sm:w-48 focus:outline-none focus:border-gray-500">
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-4" id="library">
+        <!-- Items rendered here -->
+    </main>
+
+    <!-- New Conversion Form -->
+    <div class="border-t border-gray-800 px-4 sm:px-6 py-4">
+        <div class="flex flex-col sm:flex-row gap-2">
+            <input id="url-input" type="text" placeholder="Paste a URL..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-gray-500">
+            <select id="voice-select" class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-500 sm:min-w-[140px]">
+                <option value="en_US-lessac-medium" selected>Lessac</option>
+            </select>
+            <button id="convert-btn" onclick="convert()" class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition">Convert</button>
+        </div>
+    </div>
+
+    <!-- Playback Bar -->
+    <div id="player" class="hidden border-t border-gray-800 px-4 sm:px-6 py-3">
+        <div class="flex items-center gap-3 sm:gap-4">
+            <button id="play-btn" onclick="togglePlay()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white text-black hover:bg-gray-200 transition flex-shrink-0">
+                <svg id="play-icon" class="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+                <svg id="pause-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </button>
+            <div class="flex-1 min-w-0">
+                <p id="player-title" class="text-sm font-medium truncate"></p>
+                <div class="flex items-center gap-2 mt-1">
+                    <span id="player-time" class="text-xs text-gray-500 flex-shrink-0">0:00</span>
+                    <input id="player-progress" type="range" min="0" max="100" value="0" class="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white" oninput="seekTo(this.value)">
+                    <span id="player-duration" class="text-xs text-gray-500 flex-shrink-0">0:00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let audio = null;
+        let currentItemId = null;
+        let items = [];
+
+        // --- Rendering ---
+
+        async function loadItems() {
+            try {
+                const res = await fetch('/api/items?limit=100');
+                items = await res.json();
+            } catch (e) {
+                console.error('Failed to load items:', e);
+                return;
+            }
+            render();
+        }
+
+        function render() {
+            const query = document.getElementById('search').value.toLowerCase();
+            const filtered = items.filter(item =>
+                item.title.toLowerCase().includes(query) ||
+                (item.source_url && item.source_url.toLowerCase().includes(query))
+            );
+
+            const library = document.getElementById('library');
+            if (filtered.length === 0) {
+                library.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-64 text-gray-500">
+                        <p class="text-lg mb-1">Nothing here yet</p>
+                        <p class="text-sm">Paste a URL above to get started</p>
+                    </div>`;
+                return;
+            }
+
+            library.innerHTML = filtered.map(item => {
+                const source = item.source_url ? new URL(item.source_url).hostname.replace('www.', '') : 'Text';
+                const date = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const statusClass = `status-${item.status}`;
+                const statusLabel = item.status.charAt(0).toUpperCase() + item.status.slice(1);
+
+                let actions = '';
+                if (item.status === 'completed' && item.audio_path) {
+                    const audioFile = item.audio_path.split('/').pop();
+                    actions = `<button onclick="playItem(${item.id}, '${audioFile}')" class="text-gray-400 hover:text-white transition">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+                    </button>`;
+                } else if (item.status === 'processing') {
+                    actions = `<span class="text-blue-400 text-sm animate-pulse">Converting...</span>`;
+                } else if (item.status === 'error') {
+                    actions = `<span class="text-red-400 text-xs truncate max-w-[200px]" title="${item.error}">${item.error}</span>`;
+                }
+
+                return `
+                    <div class="item-card flex items-center gap-3 sm:gap-4 py-3 border-b border-gray-800/50 cursor-pointer" onclick="selectItem(${item.id})">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium truncate">${escapeHtml(item.title)}</p>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-xs text-gray-500">${source}</span>
+                                <span class="text-xs text-gray-600">·</span>
+                                <span class="text-xs text-gray-500">${date}</span>
+                                <span class="text-xs text-gray-600">·</span>
+                                <span class="text-xs text-gray-500">${item.word_count || 0} words</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                            <span class="text-xs ${statusClass}">${statusLabel}</span>
+                            ${actions}
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        // --- Conversion ---
+
+        async function convert() {
+            const url = document.getElementById('url-input').value.trim();
+            if (!url) return;
+
+            const btn = document.getElementById('convert-btn');
+            btn.disabled = true;
+            btn.textContent = 'Converting...';
+
+            const voice = document.getElementById('voice-select').value;
+
+            try {
+                await fetch('/api/convert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, voice })
+                });
+                document.getElementById('url-input').value = '';
+                // Poll for updates
+                pollUpdates();
+            } catch (e) {
+                alert('Conversion failed: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Convert';
+            }
+        }
+
+        // --- Playback ---
+
+        function playItem(id, audioFile) {
+            if (currentItemId === id && audio && !audio.paused) {
+                togglePlay();
+                return;
+            }
+
+            currentItemId = id;
+            audio = new Audio(`/audio/${audioFile}`);
+            audio.addEventListener('timeupdate', updatePlayerUI);
+            audio.addEventListener('ended', () => {
+                document.getElementById('play-icon').classList.remove('hidden');
+                document.getElementById('pause-icon').classList.add('hidden');
+            });
+
+            audio.play();
+            document.getElementById('player').classList.remove('hidden');
+            const item = items.find(i => i.id === id);
+            document.getElementById('player-title').textContent = item ? item.title : '';
+            document.getElementById('play-icon').classList.add('hidden');
+            document.getElementById('pause-icon').classList.remove('hidden');
+        }
+
+        function togglePlay() {
+            if (!audio) return;
+            if (audio.paused) {
+                audio.play();
+                document.getElementById('play-icon').classList.add('hidden');
+                document.getElementById('pause-icon').classList.remove('hidden');
+            } else {
+                audio.pause();
+                document.getElementById('play-icon').classList.remove('hidden');
+                document.getElementById('pause-icon').classList.add('hidden');
+            }
+        }
+
+        function seekTo(value) {
+            if (!audio) return;
+            audio.currentTime = (value / 100) * audio.duration;
+        }
+
+        function updatePlayerUI() {
+            if (!audio || !audio.duration) return;
+            const pct = (audio.currentTime / audio.duration) * 100;
+            document.getElementById('player-progress').value = pct;
+            document.getElementById('player-time').textContent = formatTime(audio.currentTime);
+            document.getElementById('player-duration').textContent = formatTime(audio.duration);
+        }
+
+        function selectItem(id) {
+            // Could expand to show details view in the future
+        }
+
+        // --- Utilities ---
+
+        function formatTime(s) {
+            if (!s || isNaN(s)) return '0:00';
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${m}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // --- Polling ---
+
+        function pollUpdates() {
+            loadItems().then(() => {
+                // If there are processing items, keep polling
+                if (!Array.isArray(items)) return;
+                const hasProcessing = items.some(i => i.status === 'processing' || i.status === 'queued');
+                if (hasProcessing) {
+                    setTimeout(pollUpdates, 3000);
+                }
+            }).catch(e => {
+                console.error('Polling error:', e);
+                setTimeout(pollUpdates, 5000);
+            });
+        }
+
+        // --- Voices ---
+
+        const COMMON_VOICES = [
+            { id: "en_US-lessac-medium", name: "Lessac" },
+            { id: "en_US-lessac-high", name: "Lessac (High)" },
+            { id: "en_US-arctic-medium", name: "Arctic" },
+            { id: "en_GB-alan-medium", name: "Alan (GB)" },
+            { id: "en_GB-alan-high", name: "Alan (GB, High)" },
+            { id: "en_US-joe-medium", name: "Joe" },
+            { id: "en_US-ryan-medium", name: "Ryan" },
+            { id: "en_US-amy-medium", name: "Amy" },
+            { id: "en_US-kathleen-medium", name: "Kathleen" },
+            { id: "en_US-kore-medium", name: "Kore" },
+        ];
+
+        async function loadVoices() {
+            const select = document.getElementById('voice-select');
+            try {
+                const res = await fetch('/api/voices');
+                const data = await res.json();
+                const apiVoices = data.voices || [];
+
+                select.innerHTML = '';
+                if (apiVoices.length > 0) {
+                    for (const id of apiVoices) {
+                        const opt = document.createElement('option');
+                        opt.value = id;
+                        // Extract readable name from Piper's format: "en_US-lessac-medium - English (US)"
+                        const parts = id.split('-');
+                        const name = parts.length > 2 ? parts.slice(1, -1).join(' ') : id;
+                        opt.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+                        select.appendChild(opt);
+                    }
+                } else {
+                    // Fallback to hardcoded common voices
+                    for (const v of COMMON_VOICES) {
+                        const opt = document.createElement('option');
+                        opt.value = v.id;
+                        opt.textContent = v.name;
+                        select.appendChild(opt);
+                    }
+                }
+            } catch (e) {
+                // Piper CLI not available, use hardcoded voices
+                for (const v of COMMON_VOICES) {
+                    const opt = document.createElement('option');
+                    opt.value = v.id;
+                    opt.textContent = v.name;
+                    select.appendChild(opt);
+                }
+            }
+        }
+
+        // --- Init ---
+
+        loadVoices();
+        loadItems().then(() => {
+            const hasProcessing = items.some(i => i.status === 'processing' || i.status === 'queued');
+            if (hasProcessing) {
+                pollUpdates();
+            }
+        });
+    </script>
+</body>
+</html>

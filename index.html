@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <style>
         html { height: 100%; }
-        body { background: #0f0f0f; color: #e5e5e5; height: 100dvh; padding-bottom: env(safe-area-inset-bottom); }
+        body { background: #0f0f0f; color: #e5e5e5; }
         .item-card { transition: background 0.15s; }
         .item-card:hover { background: #1a1a1a; }
         ::-webkit-scrollbar { width: 6px; }
@@ -19,7 +19,7 @@
         .status-error { color: #ef4444; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden">
+<body class="flex flex-col overflow-hidden" style="height:100dvh">
 
     <!-- Header -->
     <header class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-gray-800">
@@ -35,7 +35,7 @@
     </main>
 
     <!-- New Conversion Form -->
-    <div class="border-t border-gray-800 px-4 sm:px-6 py-4">
+    <div id="form-bar" class="border-t border-gray-800 px-4 sm:px-6 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         <div class="flex flex-col sm:flex-row gap-2">
             <input id="url-input" type="text" placeholder="Paste a URL..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-gray-500">
             <select id="voice-select" class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-500 sm:min-w-[140px]">
@@ -193,6 +193,7 @@
 
             audio.play();
             document.getElementById('player').classList.remove('hidden');
+            document.getElementById('form-bar').style.paddingBottom = '1rem';
             const item = items.find(i => i.id === id);
             document.getElementById('player-title').textContent = item ? item.title : '';
             document.getElementById('play-icon').classList.add('hidden');
@@ -237,6 +238,7 @@
                     if (audio) { audio.pause(); audio = null; }
                     currentItemId = null;
                     document.getElementById('player').classList.add('hidden');
+                    document.getElementById('form-bar').style.paddingBottom = '';
                 }
                 loadItems();
             } catch (e) {

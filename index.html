@@ -2,18 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NarrateTTS</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <style>
-        body { background: #0f0f0f; color: #e5e5e5; }
+        html { height: 100%; }
+        body { background: #0f0f0f; color: #e5e5e5; height: 100dvh; padding-bottom: env(safe-area-inset-bottom); }
         .item-card { transition: background 0.15s; }
         .item-card:hover { background: #1a1a1a; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-        .waveform { display: flex; align-items: center; gap: 2px; height: 40px; }
-        .waveform span { display: block; width: 3px; background: #22c55e; border-radius: 2px; transition: height 0.1s; }
         .status-queued { color: #f59e0b; }
         .status-processing { color: #3b82f6; }
         .status-completed { color: #22c55e; }
@@ -47,7 +46,7 @@
     </div>
 
     <!-- Playback Bar -->
-    <div id="player" class="hidden border-t border-gray-800 px-4 sm:px-6 py-3">
+    <div id="player" class="hidden border-t border-gray-800 px-4 sm:px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <div class="flex items-center gap-3 sm:gap-4">
             <button id="play-btn" onclick="togglePlay()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white text-black hover:bg-gray-200 transition flex-shrink-0">
                 <svg id="play-icon" class="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>

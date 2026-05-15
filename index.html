@@ -22,28 +22,33 @@
 <body class="flex flex-col overflow-hidden" style="height:100dvh">
 
     <!-- Header -->
-    <header class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-gray-800">
+    <header class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-gray-800 relative">
         <h1 class="text-lg font-semibold tracking-tight">NarrateTTS</h1>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
             <input id="search" type="text" placeholder="Search..." class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm w-36 sm:w-48 focus:outline-none focus:border-gray-500">
+            <button onclick="toggleAddPanel()" id="add-btn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
+            </button>
         </div>
     </header>
+
+    <!-- Add Panel (dropdown) -->
+    <div id="add-panel" class="hidden border-b border-gray-800 bg-gray-950 px-4 sm:px-6 py-4">
+        <div class="flex flex-col gap-2">
+            <input id="url-input" type="text" placeholder="Paste a URL or type text..." class="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-gray-500" onkeydown="if(event.key==='Enter')convert()">
+            <div class="flex gap-2">
+                <select id="voice-select" class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-500">
+                    <option value="af_heart" selected>Heart (F)</option>
+                </select>
+                <button id="convert-btn" onclick="convert()" class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition">Convert</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Content -->
     <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-4" id="library">
         <!-- Items rendered here -->
     </main>
-
-    <!-- New Conversion Form -->
-    <div id="form-bar" class="border-t border-gray-800 px-4 sm:px-6 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-        <div class="flex flex-col sm:flex-row gap-2">
-            <input id="url-input" type="text" placeholder="Paste a URL..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-gray-500">
-            <select id="voice-select" class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-500 sm:min-w-[140px]">
-                <option value="af_heart" selected>Heart (F)</option>
-            </select>
-            <button id="convert-btn" onclick="convert()" class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition">Convert</button>
-        </div>
-    </div>
 
     <!-- Playback Bar -->
     <div id="player" class="hidden border-t border-gray-800 px-4 sm:px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
@@ -93,7 +98,7 @@
                 library.innerHTML = `
                     <div class="flex flex-col items-center justify-center h-64 text-gray-500">
                         <p class="text-lg mb-1">Nothing here yet</p>
-                        <p class="text-sm">Paste a URL above to get started</p>
+                        <p class="text-sm">Tap + to add a URL</p>
                     </div>`;
                 return;
             }
@@ -146,6 +151,16 @@
             }).join('');
         }
 
+        // --- Add Panel ---
+
+        function toggleAddPanel() {
+            const panel = document.getElementById('add-panel');
+            const isHidden = panel.classList.toggle('hidden');
+            if (!isHidden) {
+                document.getElementById('url-input').focus();
+            }
+        }
+
         // --- Conversion ---
 
         async function convert() {
@@ -165,7 +180,7 @@
                     body: JSON.stringify({ url, voice })
                 });
                 document.getElementById('url-input').value = '';
-                // Poll for updates
+                document.getElementById('add-panel').classList.add('hidden');
                 pollUpdates();
             } catch (e) {
                 alert('Conversion failed: ' + e.message);
@@ -193,7 +208,6 @@
 
             audio.play();
             document.getElementById('player').classList.remove('hidden');
-            document.getElementById('form-bar').style.paddingBottom = '1rem';
             const item = items.find(i => i.id === id);
             document.getElementById('player-title').textContent = item ? item.title : '';
             document.getElementById('play-icon').classList.add('hidden');
@@ -238,7 +252,6 @@
                     if (audio) { audio.pause(); audio = null; }
                     currentItemId = null;
                     document.getElementById('player').classList.add('hidden');
-                    document.getElementById('form-bar').style.paddingBottom = '';
                 }
                 loadItems();
             } catch (e) {

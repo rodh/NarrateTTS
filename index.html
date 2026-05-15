@@ -33,14 +33,14 @@
     </header>
 
     <!-- Add Panel (dropdown) -->
-    <div id="add-panel" class="hidden border-b border-gray-800 bg-gray-950 px-4 sm:px-6 py-4">
-        <div class="flex flex-col gap-2">
-            <input id="url-input" type="text" placeholder="Paste a URL or type text..." class="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-gray-500" onkeydown="if(event.key==='Enter')convert()">
-            <div class="flex gap-2">
-                <select id="voice-select" class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-500">
+    <div id="add-panel" class="hidden border-b border-gray-800 bg-gray-950 px-4 sm:px-6 py-4 overflow-hidden">
+        <div class="flex flex-col gap-2 max-w-full">
+            <input id="url-input" type="text" placeholder="Paste a URL or type text..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-gray-500 min-w-0" onkeydown="if(event.key==='Enter')convert()">
+            <div class="flex gap-2 min-w-0">
+                <select id="voice-select" class="min-w-0 flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-500">
                     <option value="af_heart" selected>Heart (F)</option>
                 </select>
-                <button id="convert-btn" onclick="convert()" class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition">Convert</button>
+                <button id="convert-btn" onclick="convert()" class="bg-gray-700 hover:bg-gray-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition shrink-0">Convert</button>
             </div>
         </div>
     </div>

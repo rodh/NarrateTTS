@@ -4,6 +4,7 @@ misaki
 num2words
 spacy
 phonemizer
+espeakng-loader
 setuptools<81
 fastapi
 uvicorn[standard]

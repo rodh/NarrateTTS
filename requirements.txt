@@ -1,6 +1,6 @@
 mlx-audio
 webrtcvad
-misaki
+misaki==0.7.3
 num2words
 spacy
 phonemizer

@@ -3,7 +3,7 @@ import logging
 
 import httpx
 
-from app.config import LLM_SERVICE_URL, LLM_MODEL, LLM_API_KEY
+from app.config import LLM_SERVICE_URL, LLM_MODEL, LLM_API_KEY, LLM_SEMAPHORE
 
 logger = logging.getLogger(__name__)
 
@@ -30,23 +30,24 @@ async def _llm_summary(text: str, title: str) -> str:
     headers = {}
     if LLM_API_KEY:
         headers["Authorization"] = f"Bearer {LLM_API_KEY}"
-    async with httpx.AsyncClient(timeout=30) as client:
-        resp = await client.post(
-            f"{LLM_SERVICE_URL}/v1/chat/completions",
-            headers=headers,
-            json={
-                "model": LLM_MODEL,
-                "messages": [
-                    {"role": "user", "content": f"{SYSTEM_PROMPT}\n\nTitle: {title}\n\n{truncated}"},
-                ],
-                "max_tokens": 400,
-                "temperature": 0.3,
-            },
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        content = data["choices"][0]["message"]["content"]
-        return _clean_response(content)
+    async with LLM_SEMAPHORE:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                f"{LLM_SERVICE_URL}/v1/chat/completions",
+                headers=headers,
+                json={
+                    "model": LLM_MODEL,
+                    "messages": [
+                        {"role": "user", "content": f"{SYSTEM_PROMPT}\n\nTitle: {title}\n\n{truncated}"},
+                    ],
+                    "max_tokens": 400,
+                    "temperature": 0.3,
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            content = data["choices"][0]["message"]["content"]
+            return _clean_response(content)
 
 
 def _clean_response(text: str) -> str:

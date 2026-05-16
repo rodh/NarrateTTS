@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 import os
 
@@ -17,6 +18,7 @@ TTS_SERVICE_URL = os.environ.get("TTS_SERVICE_URL", "")
 LLM_SERVICE_URL = os.environ.get("LLM_SERVICE_URL", "")
 LLM_MODEL = os.environ.get("LLM_MODEL", "gemma-2-9b-it-4bit")
 LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
+LLM_SEMAPHORE = asyncio.Semaphore(1)
 
 # Server settings
 HOST = "127.0.0.1"

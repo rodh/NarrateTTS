@@ -3,7 +3,7 @@ import logging
 
 import httpx
 
-from app.config import LLM_SERVICE_URL, LLM_MODEL, LLM_API_KEY
+from app.config import LLM_SERVICE_URL, LLM_MODEL, LLM_API_KEY, LLM_SEMAPHORE
 from app.db import (
     get_item_playlists, list_playlists, add_item_to_playlist,
     create_playlist, get_playlist_by_name,
@@ -57,20 +57,21 @@ async def _llm_categorize(title: str, summary: str, playlists: list[dict]) -> in
     if LLM_API_KEY:
         headers["Authorization"] = f"Bearer {LLM_API_KEY}"
 
-    async with httpx.AsyncClient(timeout=15) as client:
-        resp = await client.post(
-            f"{LLM_SERVICE_URL}/v1/chat/completions",
-            headers=headers,
-            json={
-                "model": LLM_MODEL,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 5,
-                "temperature": 0.1,
-            },
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        content = data["choices"][0]["message"]["content"].strip()
+    async with LLM_SEMAPHORE:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                f"{LLM_SERVICE_URL}/v1/chat/completions",
+                headers=headers,
+                json={
+                    "model": LLM_MODEL,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 5,
+                    "temperature": 0.1,
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            content = data["choices"][0]["message"]["content"].strip()
 
     match = re.search(r"\d+", content)
     if not match:

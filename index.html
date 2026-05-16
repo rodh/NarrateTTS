@@ -30,7 +30,7 @@
     <header class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-gray-800 relative">
         <h1 class="text-lg font-semibold tracking-tight">NarrateTTS</h1>
         <div class="flex items-center gap-2">
-            <input id="search" type="text" placeholder="Search..." class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm w-36 sm:w-48 focus:outline-none focus:border-gray-500">
+            <input id="search" type="text" placeholder="Search..." class="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm w-36 sm:w-48 focus:outline-none focus:border-gray-500" oninput="render()">
             <button onclick="toggleAddPanel()" id="add-btn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
             </button>
@@ -50,9 +50,20 @@
         </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- Tab Bar -->
+    <nav class="flex border-b border-gray-800 px-4 sm:px-6">
+        <button onclick="switchTab('library')" id="tab-library" class="px-4 py-2 text-sm font-medium border-b-2 border-white text-white">Library</button>
+        <button onclick="switchTab('playlists')" id="tab-playlists" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-300">Playlists</button>
+    </nav>
+
+    <!-- Main Content: Library -->
     <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-4" id="library">
         <!-- Items rendered here -->
+    </main>
+
+    <!-- Main Content: Playlists -->
+    <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 hidden" id="playlists-view">
+        <!-- Playlists rendered here -->
     </main>
 
     <!-- Playback Bar -->
@@ -182,6 +193,9 @@
                             </div>
                             <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                                 ${iconHtml}
+                                ${item.status === 'completed' ? `<button onclick="showPlaylistPicker(${item.id}, event)" class="text-gray-600 hover:text-gray-300 transition" title="Add to playlist">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                </button>` : ''}
                                 ${(item.play_position || 0) > 0 ? `<button onclick="event.stopPropagation(); resetProgress(${item.id})" class="text-gray-600 hover:text-gray-300 transition" title="Reset progress">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.49 9A9 9 0 105.64 5.64L4 4m16 16l-1.64-1.64A9 9 0 0020.49 9"/></svg>
                                 </button>` : ''}
@@ -511,6 +525,240 @@
             if (document.hidden) saveProgress();
         });
         window.addEventListener('beforeunload', saveProgress);
+
+        // --- Tabs ---
+
+        let currentTab = 'library';
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('library').classList.toggle('hidden', tab !== 'library');
+            document.getElementById('playlists-view').classList.toggle('hidden', tab !== 'playlists');
+            document.getElementById('tab-library').classList.toggle('border-white', tab === 'library');
+            document.getElementById('tab-library').classList.toggle('text-white', tab === 'library');
+            document.getElementById('tab-library').classList.toggle('border-transparent', tab !== 'library');
+            document.getElementById('tab-library').classList.toggle('text-gray-500', tab !== 'library');
+            document.getElementById('tab-playlists').classList.toggle('border-white', tab === 'playlists');
+            document.getElementById('tab-playlists').classList.toggle('text-white', tab === 'playlists');
+            document.getElementById('tab-playlists').classList.toggle('border-transparent', tab !== 'playlists');
+            document.getElementById('tab-playlists').classList.toggle('text-gray-500', tab !== 'playlists');
+            if (tab === 'playlists') loadPlaylists();
+        }
+
+        // --- Playlists ---
+
+        let playlists = [];
+        let viewingPlaylistId = null;
+
+        async function loadPlaylists() {
+            try {
+                const res = await fetch('/api/playlists');
+                playlists = await res.json();
+            } catch (e) {
+                console.error('Failed to load playlists:', e);
+                return;
+            }
+            renderPlaylists();
+        }
+
+        function renderPlaylists() {
+            const view = document.getElementById('playlists-view');
+            const feedBase = location.origin;
+
+            let html = `
+                <div class="mb-4 p-3 bg-gray-900 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium">All Items Feed</p>
+                            <p class="text-xs text-gray-500 mt-0.5 truncate">${feedBase}/feed</p>
+                        </div>
+                        <button onclick="copyFeedUrl('${feedBase}/feed')" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded transition">Copy URL</button>
+                    </div>
+                </div>
+                <div class="mb-4 flex gap-2">
+                    <input id="new-playlist-name" type="text" placeholder="New playlist name..." class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gray-500" onkeydown="if(event.key==='Enter')createPlaylist()">
+                    <button onclick="createPlaylist()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition">Create</button>
+                </div>`;
+
+            if (playlists.length === 0) {
+                html += `<p class="text-gray-500 text-sm text-center mt-8">No playlists yet</p>`;
+            } else {
+                html += playlists.map(p => `
+                    <div class="item-card flex items-center justify-between py-3 border-b border-gray-800/50">
+                        <div class="flex-1 min-w-0 cursor-pointer" onclick="viewPlaylist(${p.id})">
+                            <p class="text-sm font-medium truncate">${escapeHtml(p.name)}</p>
+                            <p class="text-xs text-gray-500 mt-0.5">${p.item_count} item${p.item_count !== 1 ? 's' : ''}</p>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            <button onclick="copyFeedUrl('${feedBase}/feed/playlist/${p.id}')" class="text-xs bg-gray-800 hover:bg-gray-700 px-2.5 py-1.5 rounded transition" title="Copy feed URL">Feed URL</button>
+                            <button onclick="confirmDeletePlaylist(${p.id})" class="text-gray-600 hover:text-red-400 transition" title="Delete">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </div>
+                    </div>`).join('');
+            }
+
+            view.innerHTML = html;
+        }
+
+        async function createPlaylist() {
+            const input = document.getElementById('new-playlist-name');
+            const name = input.value.trim();
+            if (!name) return;
+            try {
+                await fetch('/api/playlists', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                input.value = '';
+                loadPlaylists();
+            } catch (e) {
+                console.error('Create playlist failed:', e);
+            }
+        }
+
+        async function confirmDeletePlaylist(id) {
+            if (!confirm('Delete this playlist?')) return;
+            try {
+                await fetch(`/api/playlists/${id}`, { method: 'DELETE' });
+                loadPlaylists();
+            } catch (e) {
+                console.error('Delete playlist failed:', e);
+            }
+        }
+
+        async function viewPlaylist(id) {
+            viewingPlaylistId = id;
+            const playlist = playlists.find(p => p.id === id);
+            try {
+                const res = await fetch(`/api/playlists/${id}/items`);
+                const playlistItems = await res.json();
+                renderPlaylistDetail(playlist, playlistItems);
+            } catch (e) {
+                console.error('Failed to load playlist items:', e);
+            }
+        }
+
+        function renderPlaylistDetail(playlist, playlistItems) {
+            const view = document.getElementById('playlists-view');
+            const feedBase = location.origin;
+            let html = `
+                <div class="mb-4">
+                    <button onclick="loadPlaylists()" class="text-sm text-gray-400 hover:text-white transition">&larr; All Playlists</button>
+                </div>
+                <div class="mb-4 p-3 bg-gray-900 rounded-lg">
+                    <p class="text-sm font-medium">${escapeHtml(playlist.name)}</p>
+                    <div class="flex items-center justify-between mt-1">
+                        <p class="text-xs text-gray-500 truncate">${feedBase}/feed/playlist/${playlist.id}</p>
+                        <button onclick="copyFeedUrl('${feedBase}/feed/playlist/${playlist.id}')" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded transition ml-2">Copy URL</button>
+                    </div>
+                </div>`;
+
+            if (playlistItems.length === 0) {
+                html += `<p class="text-gray-500 text-sm text-center mt-8">No items in this playlist. Add items from the Library tab.</p>`;
+            } else {
+                html += playlistItems.map(item => {
+                    const date = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    return `
+                    <div class="item-card flex items-center justify-between py-3 border-b border-gray-800/50">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium truncate">${escapeHtml(item.title)}</p>
+                            <span class="text-xs text-gray-500">${date}</span>
+                        </div>
+                        <button onclick="removeFromPlaylist(${playlist.id}, ${item.id})" class="text-gray-600 hover:text-red-400 transition flex-shrink-0 ml-2" title="Remove from playlist">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>`;
+                }).join('');
+            }
+
+            view.innerHTML = html;
+        }
+
+        async function removeFromPlaylist(playlistId, itemId) {
+            try {
+                await fetch(`/api/playlists/${playlistId}/items/${itemId}`, { method: 'DELETE' });
+                viewPlaylist(playlistId);
+            } catch (e) {
+                console.error('Remove from playlist failed:', e);
+            }
+        }
+
+        function copyFeedUrl(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                // Brief visual feedback
+                const btn = event.target;
+                const orig = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => { btn.textContent = orig; }, 1500);
+            });
+        }
+
+        // --- Playlist assignment from library ---
+
+        async function showPlaylistPicker(itemId, event) {
+            event.stopPropagation();
+            // Remove any existing picker
+            const existing = document.querySelector('.playlist-picker');
+            if (existing) existing.remove();
+
+            // Load playlists and item's current playlists
+            const [playlistsRes, itemPlaylistsRes] = await Promise.all([
+                fetch('/api/playlists'),
+                fetch(`/api/items/${itemId}/playlists`)
+            ]);
+            const allPlaylists = await playlistsRes.json();
+            const itemPlaylists = await itemPlaylistsRes.json();
+            const itemPlaylistIds = new Set(itemPlaylists.map(p => p.id));
+
+            if (allPlaylists.length === 0) {
+                alert('Create a playlist first in the Playlists tab.');
+                return;
+            }
+
+            const picker = document.createElement('div');
+            picker.className = 'playlist-picker absolute z-50 bg-gray-900 border border-gray-700 rounded-lg shadow-xl p-2 min-w-[180px]';
+            picker.style.top = (event.target.getBoundingClientRect().bottom + 4) + 'px';
+            picker.style.right = '16px';
+            picker.style.position = 'fixed';
+
+            picker.innerHTML = allPlaylists.map(p => {
+                const checked = itemPlaylistIds.has(p.id) ? 'checked' : '';
+                return `<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-800 rounded cursor-pointer text-sm">
+                    <input type="checkbox" ${checked} onchange="togglePlaylistItem(${p.id}, ${itemId}, this.checked)" class="rounded">
+                    <span class="truncate">${escapeHtml(p.name)}</span>
+                </label>`;
+            }).join('');
+
+            document.body.appendChild(picker);
+
+            // Close on outside click
+            setTimeout(() => {
+                document.addEventListener('click', function closePicker(e) {
+                    if (!picker.contains(e.target)) {
+                        picker.remove();
+                        document.removeEventListener('click', closePicker);
+                    }
+                });
+            }, 0);
+        }
+
+        async function togglePlaylistItem(playlistId, itemId, add) {
+            try {
+                if (add) {
+                    await fetch(`/api/playlists/${playlistId}/items`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ item_id: itemId })
+                    });
+                } else {
+                    await fetch(`/api/playlists/${playlistId}/items/${itemId}`, { method: 'DELETE' });
+                }
+            } catch (e) {
+                console.error('Toggle playlist item failed:', e);
+            }
+        }
 
         // --- Init ---
 

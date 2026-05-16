@@ -13,6 +13,7 @@ def get_connection() -> sqlite3.Connection:
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys=ON")
     return conn
 
 
@@ -35,6 +36,23 @@ def init_db():
 
         CREATE INDEX IF NOT EXISTS idx_items_status ON items(status);
         CREATE INDEX IF NOT EXISTS idx_items_created ON items(created_at DESC);
+
+        CREATE TABLE IF NOT EXISTS playlists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT DEFAULT '',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS playlist_items (
+            playlist_id INTEGER NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
+            item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+            position INTEGER NOT NULL DEFAULT 0,
+            added_at TEXT DEFAULT (datetime('now')),
+            PRIMARY KEY (playlist_id, item_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_playlist_items_pos ON playlist_items(playlist_id, position);
     """)
     conn.commit()
     try:
@@ -119,3 +137,103 @@ def delete_item(item_id: int):
     conn.execute("DELETE FROM items WHERE id = ?", (item_id,))
     conn.commit()
     conn.close()
+
+
+# --- Playlist Functions ---
+
+
+def create_playlist(name: str, description: str = "") -> int:
+    conn = get_connection()
+    cursor = conn.execute(
+        "INSERT INTO playlists (name, description) VALUES (?, ?)",
+        (name, description),
+    )
+    playlist_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return playlist_id
+
+
+def list_playlists() -> list[dict]:
+    conn = get_connection()
+    rows = conn.execute("""
+        SELECT p.*, COUNT(pi.item_id) as item_count
+        FROM playlists p
+        LEFT JOIN playlist_items pi ON p.id = pi.playlist_id
+        GROUP BY p.id
+        ORDER BY p.created_at DESC
+    """).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_playlist(playlist_id: int) -> dict | None:
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM playlists WHERE id = ?", (playlist_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def delete_playlist(playlist_id: int):
+    conn = get_connection()
+    conn.execute("DELETE FROM playlists WHERE id = ?", (playlist_id,))
+    conn.commit()
+    conn.close()
+
+
+def add_item_to_playlist(playlist_id: int, item_id: int):
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT COALESCE(MAX(position), -1) + 1 as next_pos FROM playlist_items WHERE playlist_id = ?",
+        (playlist_id,),
+    ).fetchone()
+    next_pos = row["next_pos"]
+    conn.execute(
+        "INSERT OR IGNORE INTO playlist_items (playlist_id, item_id, position) VALUES (?, ?, ?)",
+        (playlist_id, item_id, next_pos),
+    )
+    conn.commit()
+    conn.close()
+
+
+def remove_item_from_playlist(playlist_id: int, item_id: int):
+    conn = get_connection()
+    conn.execute(
+        "DELETE FROM playlist_items WHERE playlist_id = ? AND item_id = ?",
+        (playlist_id, item_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def list_playlist_items(playlist_id: int) -> list[dict]:
+    conn = get_connection()
+    rows = conn.execute("""
+        SELECT i.* FROM items i
+        JOIN playlist_items pi ON i.id = pi.item_id
+        WHERE pi.playlist_id = ? AND i.status = 'completed'
+        ORDER BY pi.position
+    """, (playlist_id,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_item_playlists(item_id: int) -> list[dict]:
+    conn = get_connection()
+    rows = conn.execute("""
+        SELECT p.id, p.name FROM playlists p
+        JOIN playlist_items pi ON p.id = pi.playlist_id
+        WHERE pi.item_id = ?
+    """, (item_id,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def list_completed_items(limit: int = 500) -> list[dict]:
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT * FROM items WHERE status = 'completed' ORDER BY created_at DESC LIMIT ?",
+        (limit,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

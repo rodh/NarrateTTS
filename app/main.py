@@ -2,13 +2,20 @@ import asyncio
 from pathlib import Path
 
 import httpx
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import HOST, PORT, AUDIO_DIR, TTS_SERVICE_URL, KOKORO_MODEL
-from app.db import init_db, add_item, list_items, get_item, delete_item, update_item, count_items, update_play_position
+from app.db import (
+    init_db, add_item, list_items, get_item, delete_item, update_item,
+    count_items, update_play_position, create_playlist, list_playlists,
+    get_playlist, delete_playlist, add_item_to_playlist,
+    remove_item_from_playlist, list_playlist_items, get_item_playlists,
+    list_completed_items,
+)
+from app.feed import generate_feed, get_base_url
 from app.extractor import extract_from_url, extract_from_text
 
 app = FastAPI(title="NarrateTTS")
@@ -158,6 +165,87 @@ async def api_update_progress(item_id: int, payload: dict):
         raise HTTPException(status_code=400, detail="Invalid position")
     update_play_position(item_id, float(position))
     return {"ok": True}
+
+
+# --- Feed Endpoints ---
+
+@app.get("/feed")
+async def feed_all(request: Request):
+    base_url = get_base_url(request)
+    items = list_completed_items()
+    xml = generate_feed(
+        items,
+        title="NarrateTTS",
+        description="All narrated articles",
+        link=base_url,
+        base_url=base_url,
+    )
+    return Response(content=xml, media_type="application/rss+xml; charset=utf-8")
+
+
+@app.get("/feed/playlist/{playlist_id}")
+async def feed_playlist(playlist_id: int, request: Request):
+    playlist = get_playlist(playlist_id)
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+    base_url = get_base_url(request)
+    items = list_playlist_items(playlist_id)
+    xml = generate_feed(
+        items,
+        title=f"NarrateTTS - {playlist['name']}",
+        description=playlist.get("description", ""),
+        link=f"{base_url}/feed/playlist/{playlist_id}",
+        base_url=base_url,
+    )
+    return Response(content=xml, media_type="application/rss+xml; charset=utf-8")
+
+
+# --- Playlist API ---
+
+@app.get("/api/playlists")
+async def api_list_playlists():
+    return list_playlists()
+
+
+@app.post("/api/playlists")
+async def api_create_playlist(payload: dict):
+    name = payload.get("name", "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Name is required")
+    description = payload.get("description", "")
+    playlist_id = create_playlist(name, description)
+    return {"id": playlist_id, "name": name}
+
+
+@app.delete("/api/playlists/{playlist_id}")
+async def api_delete_playlist(playlist_id: int):
+    delete_playlist(playlist_id)
+    return {"deleted": playlist_id}
+
+
+@app.get("/api/playlists/{playlist_id}/items")
+async def api_playlist_items(playlist_id: int):
+    return list_playlist_items(playlist_id)
+
+
+@app.post("/api/playlists/{playlist_id}/items")
+async def api_add_to_playlist(playlist_id: int, payload: dict):
+    item_id = payload.get("item_id")
+    if not item_id:
+        raise HTTPException(status_code=400, detail="item_id is required")
+    add_item_to_playlist(playlist_id, item_id)
+    return {"ok": True}
+
+
+@app.delete("/api/playlists/{playlist_id}/items/{item_id}")
+async def api_remove_from_playlist(playlist_id: int, item_id: int):
+    remove_item_from_playlist(playlist_id, item_id)
+    return {"ok": True}
+
+
+@app.get("/api/items/{item_id}/playlists")
+async def api_item_playlists(item_id: int):
+    return get_item_playlists(item_id)
 
 
 # --- Audio Serving ---

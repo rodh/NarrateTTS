@@ -1,4 +1,5 @@
 import os
+import re
 from email.utils import formatdate
 from datetime import datetime
 from xml.etree.ElementTree import Element, SubElement, tostring
@@ -7,6 +8,7 @@ from fastapi import Request
 
 
 ITUNES_NS = "http://www.itunes.com/dtds/podcast-1.0.dtd"
+_CDATA_PLACEHOLDER = "CDATA_{}_CDATA"
 
 
 def get_base_url(request: Request) -> str:
@@ -72,8 +74,13 @@ def generate_feed(items: list[dict], title: str, description: str, link: str, ba
 
         summary = item.get("summary", "")
         if summary:
-            SubElement(entry, "description").text = summary
-            SubElement(entry, f"{{{ITUNES_NS}}}summary").text = summary
+            # Use placeholder — replaced with CDATA after serialization
+            placeholder = _CDATA_PLACEHOLDER.format(item["id"])
+            SubElement(entry, "description").text = placeholder
+            # itunes:summary is plain text — strip HTML tags
+            plain = re.sub(r'<[^>]+>', '', summary)
+            plain = re.sub(r'\s+', ' ', plain).strip()
+            SubElement(entry, f"{{{ITUNES_NS}}}summary").text = plain
 
         source_url = item.get("source_url")
         if source_url:
@@ -88,4 +95,13 @@ def generate_feed(items: list[dict], title: str, description: str, link: str, ba
         if duration > 0:
             SubElement(entry, f"{{{ITUNES_NS}}}duration").text = _format_duration(duration)
 
-    return '<?xml version="1.0" encoding="UTF-8"?>\n' + tostring(rss, encoding="unicode")
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + tostring(rss, encoding="unicode")
+
+    # Replace CDATA placeholders with actual CDATA sections
+    for item in items:
+        summary = item.get("summary", "")
+        if summary:
+            placeholder = _CDATA_PLACEHOLDER.format(item["id"])
+            xml = xml.replace(placeholder, f"<![CDATA[{summary}]]>")
+
+    return xml

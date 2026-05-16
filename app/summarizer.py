@@ -7,9 +7,16 @@ from app.config import LLM_SERVICE_URL, LLM_MODEL, LLM_API_KEY
 
 logger = logging.getLogger(__name__)
 
+SYSTEM_PROMPT = """\
+Summarize the following article for a podcast feed description.
+Format your response as simple HTML:
+- One opening sentence describing the main topic in a <p> tag
+- Then a <ul> with 2-4 <li> bullet points for key takeaways
+Keep it concise and skimmable. Reply with ONLY the HTML summary, no preamble."""
+
 
 async def generate_summary(text: str, title: str) -> str:
-    """Generate a 1-2 sentence summary via LLM, falling back to text extraction."""
+    """Generate an HTML summary via LLM, falling back to text extraction."""
     if LLM_SERVICE_URL:
         try:
             return await _llm_summary(text, title)
@@ -30,17 +37,12 @@ async def _llm_summary(text: str, title: str) -> str:
             json={
                 "model": LLM_MODEL,
                 "messages": [
-                    {
-                        "role": "system",
-                        "content": "Write a brief plain-text summary of this article for a podcast feed description. Include the main topic and 2-3 key points or takeaways. Keep it to a short paragraph — skimmable at a glance but enough to know what the article covers. No bullet points, no markdown, no bold, no headers. Plain text only. Reply with ONLY the summary, nothing else.",
-                    },
-                    {
-                        "role": "user",
-                        "content": f"Title: {title}\n\n{truncated} /no_think",
-                    },
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": f"Title: {title}\n\n{truncated}"},
                 ],
-                "max_tokens": 300,
+                "max_tokens": 400,
                 "temperature": 0.3,
+                "enable_thinking": False,
             },
         )
         resp.raise_for_status()
@@ -50,22 +52,34 @@ async def _llm_summary(text: str, title: str) -> str:
 
 
 def _clean_response(text: str) -> str:
-    """Strip thinking blocks, markdown formatting, and excess whitespace."""
+    """Strip thinking output, keeping only the HTML summary."""
     # Remove <think>...</think> blocks
     text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
-    # Remove markdown bold/italic
+    # Strip "Thinking Process:" style preamble — take content after last occurrence
+    # of common thinking markers
+    for marker in ['</p>\n<ul>', '</p><ul>']:
+        if marker in text:
+            # Find the first <p> before this marker
+            idx = text.find('<p>')
+            if idx >= 0:
+                text = text[idx:]
+                break
+    # If no HTML found, the model dumped plain text thinking — try to salvage
+    if '<p>' not in text and '<ul>' not in text:
+        # Strip everything before a sentence that looks like a summary
+        text = re.sub(r'^.*?(?:Thinking Process|Analyze|Step \d).*?(?:\.\s)', '', text, flags=re.DOTALL)
+        # Wrap in basic HTML
+        text = f'<p>{text.strip()}</p>'
+    # Remove markdown artifacts
     text = re.sub(r'\*{1,3}([^*]+)\*{1,3}', r'\1', text)
-    # Remove markdown headers
     text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
-    # Collapse whitespace
-    text = re.sub(r'\s+', ' ', text).strip()
-    return text
+    return text.strip()
 
 
 def _fallback_summary(text: str) -> str:
-    """Extract first 4-5 sentences, capped at 800 chars."""
+    """Extract first 4-5 sentences, wrapped in HTML."""
     sentences = re.split(r'(?<=[.!?])\s+', text.strip(), maxsplit=5)
     summary = " ".join(sentences[:5])
     if len(summary) > 800:
         summary = summary[:797] + "..."
-    return summary
+    return f"<p>{summary}</p>"

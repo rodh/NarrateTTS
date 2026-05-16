@@ -13,7 +13,7 @@ from app.db import (
     count_items, update_play_position, create_playlist, list_playlists,
     get_playlist, delete_playlist, add_item_to_playlist,
     remove_item_from_playlist, list_playlist_items, get_item_playlists,
-    list_completed_items,
+    list_completed_items, get_items_playlist_map,
 )
 from app.feed import generate_feed, get_base_url
 from app.extractor import extract_from_url, extract_from_text
@@ -45,6 +45,11 @@ async def api_list_items(limit: int = 50, offset: int = 0):
 @app.get("/api/items/count")
 async def api_item_count():
     return {"count": count_items()}
+
+
+@app.get("/api/items/playlist-map")
+async def api_items_playlist_map():
+    return get_items_playlist_map()
 
 
 @app.get("/api/voices")

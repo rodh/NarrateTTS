@@ -97,6 +97,7 @@
         let audio = null;
         let currentItemId = null;
         let items = [];
+        let playlistMap = {};
         let highWaterMark = 0;
         let saveTimeout = null;
 
@@ -104,8 +105,12 @@
 
         async function loadItems() {
             try {
-                const res = await fetch('/api/items?limit=100');
-                items = await res.json();
+                const [itemsRes, mapRes] = await Promise.all([
+                    fetch('/api/items?limit=100'),
+                    fetch('/api/items/playlist-map'),
+                ]);
+                items = await itemsRes.json();
+                playlistMap = await mapRes.json();
             } catch (e) {
                 console.error('Failed to load items:', e);
                 return;
@@ -178,6 +183,11 @@
                     ? `onclick="playItem(${item.id}, '${audioFile}')"`
                     : '';
 
+                const itemPlaylists = playlistMap[item.id] || [];
+                const tagsHtml = itemPlaylists.map(p =>
+                    `<span class="inline-block text-[11px] leading-tight px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">${escapeHtml(p.name)}</span>`
+                ).join('');
+
                 return `
                     <div class="item-card flex flex-col py-3 border-b border-gray-800/50 cursor-pointer" ${rowClick}>
                         <div class="flex items-center gap-3 sm:gap-4">
@@ -190,6 +200,7 @@
                                     <span class="text-xs text-gray-600">&middot;</span>
                                     <span class="text-xs text-gray-500">${item.word_count || 0} words</span>
                                 </div>
+                                ${tagsHtml ? `<div class="flex flex-wrap gap-1 mt-1">${tagsHtml}</div>` : ''}
                             </div>
                             <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                                 ${iconHtml}

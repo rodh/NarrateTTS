@@ -234,6 +234,21 @@ def get_item_playlists(item_id: int) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def get_items_playlist_map() -> dict[int, list[dict]]:
+    """Return {item_id: [{id, name}, ...]} for all playlist assignments."""
+    conn = get_connection()
+    rows = conn.execute("""
+        SELECT pi.item_id, p.id, p.name FROM playlist_items pi
+        JOIN playlists p ON p.id = pi.playlist_id
+        ORDER BY pi.item_id
+    """).fetchall()
+    conn.close()
+    result: dict[int, list[dict]] = {}
+    for r in rows:
+        result.setdefault(r["item_id"], []).append({"id": r["id"], "name": r["name"]})
+    return result
+
+
 def get_playlist_by_name(name: str) -> dict | None:
     conn = get_connection()
     row = conn.execute("SELECT * FROM playlists WHERE name = ?", (name,)).fetchone()

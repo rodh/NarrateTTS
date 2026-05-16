@@ -35,7 +35,7 @@
     <!-- Add Panel (dropdown) -->
     <div id="add-panel" class="hidden border-b border-gray-800 bg-gray-950 px-4 sm:px-6 py-4 overflow-hidden">
         <div class="flex flex-col gap-2 max-w-full">
-            <input id="url-input" type="text" placeholder="Paste a URL or type text..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-base focus:outline-none focus:border-gray-500 min-w-0" onkeydown="if(event.key==='Enter')convert()">
+            <textarea id="url-input" rows="1" placeholder="Paste a URL or text..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-base focus:outline-none focus:border-gray-500 min-w-0 resize-none overflow-hidden leading-normal" oninput="autoResize(this)" onpaste="setTimeout(() => autoResize(this), 0)" onkeydown="handleInputKey(event)"></textarea>
             <div class="flex gap-2 min-w-0">
                 <select id="voice-select" class="min-w-0 flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:border-gray-500">
                     <option value="af_heart" selected>Heart (F)</option>
@@ -98,7 +98,7 @@
                 library.innerHTML = `
                     <div class="flex flex-col items-center justify-center h-64 text-gray-500">
                         <p class="text-lg mb-1">Nothing here yet</p>
-                        <p class="text-sm">Tap + to add a URL</p>
+                        <p class="text-sm">Tap + to add a URL or paste text</p>
                     </div>`;
                 return;
             }
@@ -164,22 +164,27 @@
         // --- Conversion ---
 
         async function convert() {
-            const url = document.getElementById('url-input').value.trim();
-            if (!url) return;
+            const input = document.getElementById('url-input');
+            const value = input.value.trim();
+            if (!value) return;
 
             const btn = document.getElementById('convert-btn');
             btn.disabled = true;
             btn.textContent = 'Converting...';
 
             const voice = document.getElementById('voice-select').value;
+            const isUrl = /^https?:\/\//i.test(value);
+            const body = isUrl ? { url: value, voice } : { text: value, voice };
 
             try {
                 await fetch('/api/convert', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url, voice })
+                    body: JSON.stringify(body)
                 });
-                document.getElementById('url-input').value = '';
+                input.value = '';
+                input.rows = 1;
+                input.style.height = '';
                 document.getElementById('add-panel').classList.add('hidden');
                 pollUpdates();
             } catch (e) {
@@ -260,6 +265,22 @@
         }
 
         // --- Utilities ---
+
+        function autoResize(el) {
+            el.style.height = '';
+            el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+        }
+
+        function handleInputKey(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                const value = event.target.value.trim();
+                const isUrl = /^https?:\/\//i.test(value);
+                if (isUrl || value.split('\n').length <= 1) {
+                    event.preventDefault();
+                    convert();
+                }
+            }
+        }
 
         function formatTime(s) {
             if (!s || isNaN(s)) return '0:00';

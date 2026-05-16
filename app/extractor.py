@@ -24,11 +24,39 @@ async def extract_from_url(url: str) -> dict[str, str]:
 
 
 def extract_from_text(text: str) -> dict[str, str]:
-    """Wrap raw text with a generated title."""
+    """Clean pasted text (may contain markdown/HTML) and generate a title."""
+    text = _strip_markdown(text)
+    text = _strip_html(text)
     words = text.split()
     preview = " ".join(words[:12]).rstrip(".,;:")
     title = f"Text — {preview}{'...' if len(words) > 12 else ''}"
     return {"title": title, "text": text.strip()}
+
+
+def _strip_markdown(text: str) -> str:
+    """Remove common markdown formatting, keeping readable text."""
+    import re
+    # Remove images ![alt](url)
+    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)
+    # Convert links [text](url) to just text
+    text = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", text)
+    # Remove headings markers
+    text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+    # Remove bold/italic markers
+    text = re.sub(r"\*{1,3}([^*]+)\*{1,3}", r"\1", text)
+    text = re.sub(r"_{1,3}([^_]+)_{1,3}", r"\1", text)
+    # Remove inline code backticks
+    text = re.sub(r"`([^`]+)`", r"\1", text)
+    # Remove code fences
+    text = re.sub(r"```[\s\S]*?```", "", text)
+    # Remove blockquote markers
+    text = re.sub(r"^>\s?", "", text, flags=re.MULTILINE)
+    # Remove horizontal rules
+    text = re.sub(r"^[-*_]{3,}\s*$", "", text, flags=re.MULTILINE)
+    # Remove list markers (-, *, numbered)
+    text = re.sub(r"^[\s]*[-*+]\s+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"^[\s]*\d+\.\s+", "", text, flags=re.MULTILINE)
+    return text
 
 
 def _strip_html(html: str) -> str:

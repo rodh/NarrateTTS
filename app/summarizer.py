@@ -28,14 +28,14 @@ async def _llm_summary(text: str, title: str) -> str:
                 "messages": [
                     {
                         "role": "system",
-                        "content": "Summarize this article in 1-2 sentences for a podcast feed description. Be concise and informative.",
+                        "content": "Write a brief summary of this article for a podcast feed description. Include the main topic and 2-3 key points or takeaways. Keep it to a short paragraph — skimmable at a glance but enough to know what the article covers. No bullet points.",
                     },
                     {
                         "role": "user",
                         "content": f"Title: {title}\n\n{truncated}",
                     },
                 ],
-                "max_tokens": 150,
+                "max_tokens": 300,
                 "temperature": 0.3,
             },
         )
@@ -45,9 +45,9 @@ async def _llm_summary(text: str, title: str) -> str:
 
 
 def _fallback_summary(text: str) -> str:
-    """Extract first 2 sentences, capped at 500 chars."""
-    sentences = re.split(r'(?<=[.!?])\s+', text.strip(), maxsplit=2)
-    summary = " ".join(sentences[:2])
-    if len(summary) > 500:
-        summary = summary[:497] + "..."
+    """Extract first 4-5 sentences, capped at 800 chars."""
+    sentences = re.split(r'(?<=[.!?])\s+', text.strip(), maxsplit=5)
+    summary = " ".join(sentences[:5])
+    if len(summary) > 800:
+        summary = summary[:797] + "..."
     return summary

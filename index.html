@@ -252,6 +252,8 @@
             currentItemId = id;
             if (audio) { audio.pause(); audio = null; }
             audio = new Audio(`/audio/${audioFile}`);
+            const speed = getStoredSpeed();
+            audio.playbackRate = speed;
 
             const item = items.find(i => i.id === id);
             highWaterMark = item?.play_position || 0;
@@ -316,6 +318,23 @@
             } else {
                 audio.currentTime = newTime;
             }
+        }
+
+        const SPEED_OPTIONS = [1, 1.25, 1.5, 2, 0.75];
+
+        function getStoredSpeed() {
+            const stored = localStorage.getItem('narrateTTS_playbackSpeed');
+            const val = parseFloat(stored);
+            return (val && SPEED_OPTIONS.includes(val)) ? val : 1;
+        }
+
+        function cycleSpeed() {
+            const current = getStoredSpeed();
+            const idx = SPEED_OPTIONS.indexOf(current);
+            const next = SPEED_OPTIONS[(idx + 1) % SPEED_OPTIONS.length];
+            localStorage.setItem('narrateTTS_playbackSpeed', next);
+            if (audio) audio.playbackRate = next;
+            document.getElementById('speed-btn').textContent = next === 1 ? '1x' : next + 'x';
         }
 
         function updatePlayerUI() {
@@ -469,6 +488,10 @@
                 pollUpdates();
             }
         });
+
+        // Init speed button label
+        const initSpeed = getStoredSpeed();
+        document.getElementById('speed-btn').textContent = initSpeed === 1 ? '1x' : initSpeed + 'x';
     </script>
 </body>
 </html>

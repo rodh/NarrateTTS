@@ -20,6 +20,9 @@ LLM_MODEL = os.environ.get("LLM_MODEL", "gemma-2-9b-it-4bit")
 LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
 LLM_SEMAPHORE = asyncio.Semaphore(1)
 
+# Feed settings
+FEED_TTL_DAYS = int(os.environ.get("FEED_TTL_DAYS", "7"))
+
 # Server settings
 HOST = "127.0.0.1"
 PORT = 8090

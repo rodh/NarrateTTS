@@ -7,13 +7,14 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import HOST, PORT, AUDIO_DIR, STATIC_DIR, TTS_SERVICE_URL, KOKORO_MODEL
+from app.config import HOST, PORT, AUDIO_DIR, STATIC_DIR, TTS_SERVICE_URL, KOKORO_MODEL, FEED_TTL_DAYS
 from app.db import (
     init_db, add_item, list_items, get_item, delete_item, update_item,
     count_items, update_play_position, create_playlist, list_playlists,
     get_playlist, delete_playlist, add_item_to_playlist,
     remove_item_from_playlist, list_playlist_items, get_item_playlists,
-    list_completed_items, get_items_playlist_map,
+    list_completed_items, list_feed_items, get_items_playlist_map,
+    mark_consumed,
 )
 from app.feed import generate_feed, generate_opml, get_base_url
 from app.extractor import extract_from_url, extract_from_text
@@ -191,7 +192,7 @@ async def api_update_progress(item_id: int, payload: dict):
 @app.get("/feed")
 async def feed_all(request: Request):
     base_url = get_base_url(request)
-    items = list_completed_items()
+    items = list_feed_items(FEED_TTL_DAYS)
     xml = generate_feed(
         items,
         title="NarrateTTS",
@@ -208,7 +209,7 @@ async def feed_playlist(playlist_id: int, request: Request):
     if not playlist:
         raise HTTPException(status_code=404, detail="Playlist not found")
     base_url = get_base_url(request)
-    items = list_playlist_items(playlist_id)
+    items = list_playlist_items(playlist_id, ttl_days=FEED_TTL_DAYS)
     xml = generate_feed(
         items,
         title=f"NarrateTTS - {playlist['name']}",
@@ -326,6 +327,10 @@ async def serve_audio(filename: str):
     audio_file = AUDIO_DIR / filename
     if not audio_file.exists():
         raise HTTPException(status_code=404, detail="Audio file not found")
+    # Mark item as consumed on download
+    stem = Path(filename).stem
+    if stem.isdigit():
+        mark_consumed(int(stem))
     return FileResponse(audio_file, media_type="audio/mpeg")
 
 

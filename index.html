@@ -133,7 +133,7 @@
             library.innerHTML = filtered.map(item => {
                 const date = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 const pct = (item.duration_seconds > 0) ? ((item.play_position || 0) / item.duration_seconds) : 0;
-                const isFinished = pct >= 0.8;
+                const isFinished = pct >= 0.8 || !!item.consumed_at;
                 const isPlaying = currentItemId === item.id && audio && !audio.paused;
 
                 let sourceHtml = '';

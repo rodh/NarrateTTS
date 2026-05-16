@@ -65,6 +65,11 @@ def init_db():
         conn.commit()
     except Exception:
         pass
+    try:
+        conn.execute("ALTER TABLE items ADD COLUMN consumed_at TEXT")
+        conn.commit()
+    except Exception:
+        pass
     conn.close()
 
 
@@ -211,14 +216,23 @@ def remove_item_from_playlist(playlist_id: int, item_id: int):
     conn.close()
 
 
-def list_playlist_items(playlist_id: int) -> list[dict]:
+def list_playlist_items(playlist_id: int, ttl_days: int | None = None) -> list[dict]:
     conn = get_connection()
-    rows = conn.execute("""
-        SELECT i.* FROM items i
-        JOIN playlist_items pi ON i.id = pi.item_id
-        WHERE pi.playlist_id = ? AND i.status = 'completed'
-        ORDER BY pi.position
-    """, (playlist_id,)).fetchall()
+    if ttl_days is not None:
+        rows = conn.execute("""
+            SELECT i.* FROM items i
+            JOIN playlist_items pi ON i.id = pi.item_id
+            WHERE pi.playlist_id = ? AND i.status = 'completed'
+            AND (i.consumed_at IS NULL OR i.consumed_at > datetime('now', ? || ' days'))
+            ORDER BY pi.position
+        """, (playlist_id, f"-{ttl_days}")).fetchall()
+    else:
+        rows = conn.execute("""
+            SELECT i.* FROM items i
+            JOIN playlist_items pi ON i.id = pi.item_id
+            WHERE pi.playlist_id = ? AND i.status = 'completed'
+            ORDER BY pi.position
+        """, (playlist_id,)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
@@ -256,11 +270,36 @@ def get_playlist_by_name(name: str) -> dict | None:
     return dict(row) if row else None
 
 
+def mark_consumed(item_id: int):
+    """Mark an item as consumed (first download only — idempotent)."""
+    conn = get_connection()
+    conn.execute(
+        "UPDATE items SET consumed_at = datetime('now') WHERE id = ? AND consumed_at IS NULL",
+        (item_id,),
+    )
+    conn.commit()
+    conn.close()
+
+
 def list_completed_items(limit: int = 500) -> list[dict]:
     conn = get_connection()
     rows = conn.execute(
         "SELECT * FROM items WHERE status = 'completed' ORDER BY created_at DESC LIMIT ?",
         (limit,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def list_feed_items(ttl_days: int, limit: int = 500) -> list[dict]:
+    """List completed items for the feed, excluding items consumed more than ttl_days ago."""
+    conn = get_connection()
+    rows = conn.execute(
+        """SELECT * FROM items
+           WHERE status = 'completed' AND audio_path IS NOT NULL
+           AND (consumed_at IS NULL OR consumed_at > datetime('now', ? || ' days'))
+           ORDER BY created_at DESC LIMIT ?""",
+        (f"-{ttl_days}", limit),
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]

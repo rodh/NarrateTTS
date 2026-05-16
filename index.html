@@ -17,6 +17,11 @@
         .status-processing { color: #3b82f6; }
         .status-completed { color: #22c55e; }
         .status-error { color: #ef4444; }
+        .progress-bar {
+            height: 2px;
+            border-radius: 1px;
+            transition: width 0.3s ease;
+        }
     </style>
 </head>
 <body class="flex flex-col overflow-hidden" style="height:100dvh">
@@ -72,6 +77,8 @@
         let audio = null;
         let currentItemId = null;
         let items = [];
+        let highWaterMark = 0;
+        let saveTimeout = null;
 
         // --- Rendering ---
 
@@ -105,48 +112,73 @@
 
             library.innerHTML = filtered.map(item => {
                 const date = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const statusClass = `status-${item.status}`;
-                const statusLabel = item.status.charAt(0).toUpperCase() + item.status.slice(1);
+                const pct = (item.duration_seconds > 0) ? ((item.play_position || 0) / item.duration_seconds) : 0;
+                const isFinished = pct >= 0.8;
+                const isPlaying = currentItemId === item.id && audio && !audio.paused;
 
                 let sourceHtml = '';
                 if (item.source_url) {
-                    const hostname = new URL(item.source_url).hostname.replace('www.', '');
-                    sourceHtml = `<a href="${escapeHtml(item.source_url)}" target="_blank" class="text-xs text-gray-500 hover:text-gray-300 truncate max-w-[200px]" onclick="event.stopPropagation()" title="${escapeHtml(item.source_url)}">${hostname}</a>`;
+                    try {
+                        const hostname = new URL(item.source_url).hostname.replace('www.', '');
+                        sourceHtml = `<a href="${escapeHtml(item.source_url)}" target="_blank" class="text-xs text-gray-500 hover:text-gray-300 truncate max-w-[200px]" onclick="event.stopPropagation()" title="${escapeHtml(item.source_url)}">${hostname}</a>`;
+                    } catch(e) {
+                        sourceHtml = `<span class="text-xs text-gray-500">Link</span>`;
+                    }
                 } else {
                     sourceHtml = `<span class="text-xs text-gray-500">Text</span>`;
                 }
 
-                let actions = '';
+                // Icon for right side
+                let iconHtml = '';
                 if (item.status === 'completed' && item.audio_path) {
-                    const audioFile = item.audio_path.split('/').pop();
-                    actions = `<button onclick="event.stopPropagation(); playItem(${item.id}, '${audioFile}')" class="text-gray-400 hover:text-white transition">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
-                    </button>`;
+                    if (isPlaying) {
+                        iconHtml = `<span class="text-gray-400"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg></span>`;
+                    } else if (isFinished) {
+                        iconHtml = `<span class="text-green-400"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>`;
+                    } else {
+                        iconHtml = `<span class="text-gray-400"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></span>`;
+                    }
                 } else if (item.status === 'processing') {
-                    actions = `<span class="text-blue-400 text-sm animate-pulse">Converting...</span>`;
+                    iconHtml = `<span class="text-blue-400 text-sm animate-pulse">Converting...</span>`;
                 } else if (item.status === 'error') {
-                    actions = `<span class="text-red-400 text-xs truncate max-w-[200px]" title="${item.error}">${item.error}</span>`;
+                    iconHtml = `<span class="text-red-400 text-xs truncate max-w-[200px]" title="${escapeHtml(item.error || '')}">${escapeHtml(item.error || 'Error')}</span>`;
                 }
 
+                // Progress bar
+                let progressHtml = '';
+                if (item.status === 'completed' && item.duration_seconds > 0 && pct > 0) {
+                    const barPct = Math.min(pct * 100, 100);
+                    const barColor = isFinished ? 'bg-green-500' : 'bg-gray-500';
+                    progressHtml = `<div class="w-full bg-gray-800 rounded-full mt-1.5"><div class="progress-bar ${barColor}" style="width: ${barPct}%"></div></div>`;
+                }
+
+                // Row click action
+                const audioFile = item.audio_path ? item.audio_path.split('/').pop() : '';
+                const rowClick = (item.status === 'completed' && item.audio_path)
+                    ? `onclick="playItem(${item.id}, '${audioFile}')"`
+                    : '';
+
                 return `
-                    <div class="item-card flex items-center gap-3 sm:gap-4 py-3 border-b border-gray-800/50 cursor-pointer" onclick="selectItem(${item.id})">
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium truncate">${escapeHtml(item.title)}</p>
-                            <div class="flex items-center gap-2 mt-0.5">
-                                ${sourceHtml}
-                                <span class="text-xs text-gray-600">·</span>
-                                <span class="text-xs text-gray-500">${date}</span>
-                                <span class="text-xs text-gray-600">·</span>
-                                <span class="text-xs text-gray-500">${item.word_count || 0} words</span>
+                    <div class="item-card flex flex-col py-3 border-b border-gray-800/50 cursor-pointer" ${rowClick}>
+                        <div class="flex items-center gap-3 sm:gap-4">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium truncate">${escapeHtml(item.title)}</p>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    ${sourceHtml}
+                                    <span class="text-xs text-gray-600">&middot;</span>
+                                    <span class="text-xs text-gray-500">${date}</span>
+                                    <span class="text-xs text-gray-600">&middot;</span>
+                                    <span class="text-xs text-gray-500">${item.word_count || 0} words</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                                ${iconHtml}
+                                <button onclick="event.stopPropagation(); deleteItem(${item.id})" class="text-gray-600 hover:text-red-400 transition" title="Delete">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                            <span class="text-xs ${statusClass}">${statusLabel}</span>
-                            ${actions}
-                            <button onclick="event.stopPropagation(); deleteItem(${item.id})" class="text-gray-600 hover:text-red-400 transition" title="Delete">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                            </button>
-                        </div>
+                        ${progressHtml}
                     </div>`;
             }).join('');
         }
@@ -198,25 +230,48 @@
         // --- Playback ---
 
         function playItem(id, audioFile) {
-            if (currentItemId === id && audio && !audio.paused) {
+            if (currentItemId === id && audio) {
                 togglePlay();
                 return;
             }
 
+            // Save progress from previous item
+            if (currentItemId && highWaterMark > 0) {
+                saveProgress();
+            }
+
             currentItemId = id;
+            if (audio) { audio.pause(); audio = null; }
             audio = new Audio(`/audio/${audioFile}`);
+
+            const item = items.find(i => i.id === id);
+            highWaterMark = item?.play_position || 0;
+
             audio.addEventListener('timeupdate', updatePlayerUI);
             audio.addEventListener('ended', () => {
+                highWaterMark = audio.duration;
+                saveProgress();
                 document.getElementById('play-icon').classList.remove('hidden');
                 document.getElementById('pause-icon').classList.add('hidden');
+                renderPreservingScroll();
             });
+
+            // Resume from saved position
+            if (highWaterMark > 0) {
+                audio.addEventListener('canplay', function seekOnce() {
+                    if (audio.currentTime < highWaterMark) {
+                        audio.currentTime = highWaterMark;
+                    }
+                    audio.removeEventListener('canplay', seekOnce);
+                });
+            }
 
             audio.play();
             document.getElementById('player').classList.remove('hidden');
-            const item = items.find(i => i.id === id);
             document.getElementById('player-title').textContent = item ? item.title : '';
             document.getElementById('play-icon').classList.add('hidden');
             document.getElementById('pause-icon').classList.remove('hidden');
+            renderPreservingScroll();
         }
 
         function togglePlay() {
@@ -227,9 +282,11 @@
                 document.getElementById('pause-icon').classList.remove('hidden');
             } else {
                 audio.pause();
+                saveProgress();
                 document.getElementById('play-icon').classList.remove('hidden');
                 document.getElementById('pause-icon').classList.add('hidden');
             }
+            renderPreservingScroll();
         }
 
         function seekTo(value) {
@@ -243,10 +300,11 @@
             document.getElementById('player-progress').value = pct;
             document.getElementById('player-time').textContent = formatTime(audio.currentTime);
             document.getElementById('player-duration').textContent = formatTime(audio.duration);
-        }
 
-        function selectItem(id) {
-            // Could expand to show details view in the future
+            if (audio.currentTime > highWaterMark) {
+                highWaterMark = audio.currentTime;
+                debouncedSaveProgress();
+            }
         }
 
         async function deleteItem(id) {
@@ -262,6 +320,31 @@
             } catch (e) {
                 console.error('Delete failed:', e);
             }
+        }
+
+        function saveProgress() {
+            if (!currentItemId || highWaterMark <= 0) return;
+            const item = items.find(i => i.id === currentItemId);
+            if (item && highWaterMark > (item.play_position || 0)) {
+                item.play_position = highWaterMark;
+            }
+            fetch(`/api/items/${currentItemId}/progress`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ position: highWaterMark })
+            }).catch(e => console.error('Save progress failed:', e));
+        }
+
+        function debouncedSaveProgress() {
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveProgress, 5000);
+        }
+
+        function renderPreservingScroll() {
+            const library = document.getElementById('library');
+            const scrollTop = library.scrollTop;
+            render();
+            library.scrollTop = scrollTop;
         }
 
         // --- Utilities ---
@@ -347,6 +430,11 @@
                 populateVoices(COMMON_VOICES);
             }
         }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) saveProgress();
+        });
+        window.addEventListener('beforeunload', saveProgress);
 
         // --- Init ---
 

@@ -2,12 +2,14 @@ import os
 import re
 from email.utils import formatdate
 from datetime import datetime
+import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from fastapi import Request
 
 
 ITUNES_NS = "http://www.itunes.com/dtds/podcast-1.0.dtd"
+ET.register_namespace("itunes", ITUNES_NS)
 _CDATA_PLACEHOLDER = "CDATA_{}_CDATA"
 
 
@@ -37,7 +39,6 @@ def _format_duration(seconds: float) -> str:
 
 def generate_feed(items: list[dict], title: str, description: str, link: str, base_url: str) -> str:
     rss = Element("rss", version="2.0")
-    rss.set("xmlns:itunes", ITUNES_NS)
 
     channel = SubElement(rss, "channel")
     SubElement(channel, "title").text = title

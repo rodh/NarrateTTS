@@ -43,8 +43,6 @@ async def _llm_summary(text: str, title: str) -> str:
                 "temperature": 0.3,
             },
         )
-        if resp.status_code != 200:
-            logger.warning("LLM response %s: %s", resp.status_code, resp.text)
         resp.raise_for_status()
         data = resp.json()
         content = data["choices"][0]["message"]["content"]

@@ -165,7 +165,7 @@
                 }
 
                 // Progress circle
-                let progressCircle = '';
+                let fillSvg = '';
                 if (item.status === 'completed' && item.duration_seconds > 0 && pct > 0) {
                     const clampedPct = Math.min(pct, 1);
                     let quarter;
@@ -180,8 +180,9 @@
                         3: `<path d="M8 8 L8 0 A8 8 0 1 1 0 8 Z" fill="${fillColor}"/>`,
                         4: `<circle cx="8" cy="8" r="8" fill="${fillColor}"/>`
                     };
-                    progressCircle = `<svg class="w-3 h-3 flex-shrink-0" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.5" fill="none" stroke="#374151" stroke-width="1"/>${paths[quarter]}</svg>`;
+                    fillSvg = paths[quarter];
                 }
+                const progressCircle = `<svg class="w-3 h-3 flex-shrink-0 mt-[3px]" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.5" fill="none" stroke="#374151" stroke-width="1"/>${fillSvg}</svg>`;
 
                 // Row click action
                 const audioFile = item.audio_path ? item.audio_path.split('/').pop() : '';
@@ -195,7 +196,7 @@
                 ).join('');
 
                 return `
-                    <div class="item-card flex items-center py-3 border-b border-gray-800/50 cursor-pointer gap-2" ${rowClick}>
+                    <div class="item-card flex items-start py-3 border-b border-gray-800/50 cursor-pointer gap-2" ${rowClick}>
                         ${progressCircle}
                         <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                             <div class="flex-1 min-w-0">

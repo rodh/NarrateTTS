@@ -234,6 +234,13 @@ def get_item_playlists(item_id: int) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def get_playlist_by_name(name: str) -> dict | None:
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM playlists WHERE name = ?", (name,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
 def list_completed_items(limit: int = 500) -> list[dict]:
     conn = get_connection()
     rows = conn.execute(

@@ -18,6 +18,7 @@ from app.db import (
 from app.feed import generate_feed, get_base_url
 from app.extractor import extract_from_url, extract_from_text
 from app.summarizer import generate_summary
+from app.categorizer import categorize_item
 
 app = FastAPI(title="NarrateTTS")
 
@@ -147,6 +148,12 @@ async def _process_tts(item_id: int, text: str, title: str, source_url: str | No
 
         update_item(item_id, status="completed", audio_path=final_path,
                     duration_seconds=duration, summary=summary)
+
+        # Auto-categorize into playlist
+        try:
+            await categorize_item(item_id, title, summary)
+        except Exception:
+            pass
     except Exception as e:
         update_item(item_id, status="error", error=str(e))
 
@@ -277,6 +284,22 @@ async def api_backfill_summaries():
         except Exception:
             continue
     return {"backfilled": count}
+
+
+@app.post("/api/backfill-categories")
+async def api_backfill_categories():
+    """Auto-categorize completed items that aren't in any playlist."""
+    items = list_completed_items()
+    count = 0
+    for item in items:
+        try:
+            await categorize_item(item["id"], item.get("title", ""), item.get("summary", ""))
+            # Check if it was actually assigned (not skipped)
+            if get_item_playlists(item["id"]):
+                count += 1
+        except Exception:
+            continue
+    return {"categorized": count}
 
 
 # --- Audio Serving ---

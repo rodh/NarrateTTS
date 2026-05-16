@@ -216,7 +216,7 @@ async def feed_playlist(playlist_id: int, request: Request):
     items = list_playlist_items(playlist_id, ttl_days=FEED_TTL_DAYS)
     xml = generate_feed(
         items,
-        title=f"NarrateTTS - {playlist['name']}",
+        title=playlist["name"],
         description=playlist.get("description", ""),
         link=f"{base_url}/feed/playlist/{playlist_id}",
         base_url=base_url,

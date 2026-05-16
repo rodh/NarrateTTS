@@ -72,14 +72,31 @@ def generate_feed(items: list[dict], title: str, description: str, link: str, ba
         SubElement(entry, "guid", isPermaLink="false").text = f"narratetts-{item['id']}"
         SubElement(entry, "pubDate").text = _rfc2822(item.get("created_at", ""))
 
+        duration = item.get("duration_seconds") or 0
+        duration_label = ""
+        if duration > 0:
+            mins = round(duration / 60)
+            if mins < 1:
+                duration_label = "Less than 1 min"
+            elif mins == 1:
+                duration_label = "1 min"
+            else:
+                duration_label = f"{mins} min"
+
         summary = item.get("summary", "")
-        if summary:
+        if summary or duration_label:
+            display_summary = summary
+            if duration_label:
+                prefix_html = f"<p><b>{duration_label}</b></p>"
+                display_summary = prefix_html + summary if summary else prefix_html
             # Use placeholder — replaced with CDATA after serialization
             placeholder = _CDATA_PLACEHOLDER.format(item["id"])
             SubElement(entry, "description").text = placeholder
             # itunes:summary is plain text — strip HTML tags
             plain = re.sub(r'<[^>]+>', '', summary)
             plain = re.sub(r'\s+', ' ', plain).strip()
+            if duration_label:
+                plain = f"{duration_label} — {plain}" if plain else duration_label
             SubElement(entry, f"{{{ITUNES_NS}}}summary").text = plain
 
         source_url = item.get("source_url")
@@ -91,7 +108,6 @@ def generate_feed(items: list[dict], title: str, description: str, link: str, ba
         enclosure.set("length", file_size)
         enclosure.set("type", "audio/mpeg")
 
-        duration = item.get("duration_seconds") or 0
         if duration > 0:
             SubElement(entry, f"{{{ITUNES_NS}}}duration").text = _format_duration(duration)
 
@@ -100,9 +116,22 @@ def generate_feed(items: list[dict], title: str, description: str, link: str, ba
     # Replace CDATA placeholders with actual CDATA sections
     for item in items:
         summary = item.get("summary", "")
-        if summary:
+        dur = item.get("duration_seconds") or 0
+        if summary or dur > 0:
+            mins = round(dur / 60) if dur > 0 else 0
+            if mins < 1 and dur > 0:
+                dl = "Less than 1 min"
+            elif mins == 1:
+                dl = "1 min"
+            elif mins > 1:
+                dl = f"{mins} min"
+            else:
+                dl = ""
+            display = summary
+            if dl:
+                display = f"<p><b>{dl}</b></p>{summary}" if summary else f"<p><b>{dl}</b></p>"
             placeholder = _CDATA_PLACEHOLDER.format(item["id"])
-            xml = xml.replace(placeholder, f"<![CDATA[{summary}]]>")
+            xml = xml.replace(placeholder, f"<![CDATA[{display}]]>")
 
     return xml
 

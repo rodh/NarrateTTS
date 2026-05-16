@@ -12,3 +12,4 @@ httpx
 readability-lxml
 lxml-html-clean
 Pillow
+mutagen

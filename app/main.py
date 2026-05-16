@@ -142,9 +142,13 @@ async def _process_tts(item_id: int, text: str, title: str, source_url: str | No
             except (FileNotFoundError, subprocess.CalledProcessError):
                 final_path = str(wav_path)
 
-        # Estimate duration from word count (~150 wpm average speech rate)
-        word_count = len(text.split())
-        duration = round((word_count / 150) * 60, 1)
+        # Read actual audio duration from the MP3 file
+        try:
+            from mutagen.mp3 import MP3
+            duration = round(MP3(final_path).info.length, 1)
+        except Exception:
+            # Fallback: estimate from word count (~150 wpm)
+            duration = round((len(text.split()) / 150) * 60, 1)
 
         # Generate summary (non-blocking, failure is non-fatal)
         try:
@@ -302,6 +306,26 @@ async def api_backfill_summaries():
         except Exception:
             continue
     return {"backfilled": count}
+
+
+@app.post("/api/backfill-durations")
+async def api_backfill_durations():
+    """Update duration_seconds from actual MP3 files for completed items."""
+    from mutagen.mp3 import MP3
+    items = list_completed_items()
+    count = 0
+    for item in items:
+        audio_path = item.get("audio_path")
+        if not audio_path or not Path(audio_path).exists():
+            continue
+        try:
+            duration = round(MP3(audio_path).info.length, 1)
+            if duration > 0 and duration != item.get("duration_seconds"):
+                update_item(item["id"], duration_seconds=duration)
+                count += 1
+        except Exception:
+            continue
+    return {"updated": count}
 
 
 @app.post("/api/backfill-categories")

@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import HOST, PORT, AUDIO_DIR, TTS_SERVICE_URL, KOKORO_MODEL
-from app.db import init_db, add_item, list_items, get_item, delete_item, update_item, count_items
+from app.db import init_db, add_item, list_items, get_item, delete_item, update_item, count_items, update_play_position
 from app.extractor import extract_from_url, extract_from_text
 
 app = FastAPI(title="NarrateTTS")
@@ -149,6 +149,15 @@ async def api_get_item(item_id: int):
 async def api_delete_item(item_id: int):
     delete_item(item_id)
     return {"deleted": item_id}
+
+
+@app.patch("/api/items/{item_id}/progress")
+async def api_update_progress(item_id: int, payload: dict):
+    position = payload.get("position")
+    if position is None or not isinstance(position, (int, float)) or position < 0:
+        raise HTTPException(status_code=400, detail="Invalid position")
+    update_play_position(item_id, float(position))
+    return {"ok": True}
 
 
 # --- Audio Serving ---

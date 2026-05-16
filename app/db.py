@@ -37,6 +37,11 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_items_created ON items(created_at DESC);
     """)
     conn.commit()
+    try:
+        conn.execute("ALTER TABLE items ADD COLUMN play_position REAL DEFAULT 0")
+        conn.commit()
+    except Exception:
+        pass
     conn.close()
 
 
@@ -91,6 +96,17 @@ def update_item(item_id: int, **kwargs):
     values.append(item_id)
     conn = get_connection()
     conn.execute(f"UPDATE items SET {', '.join(sets)} WHERE id = ?", values)
+    conn.commit()
+    conn.close()
+
+
+def update_play_position(item_id: int, position: float):
+    """Update play_position only if new value exceeds current (high-water mark)."""
+    conn = get_connection()
+    conn.execute(
+        "UPDATE items SET play_position = ?, updated_at = datetime('now') WHERE id = ? AND (play_position IS NULL OR play_position < ?)",
+        (position, item_id, position),
+    )
     conn.commit()
     conn.close()
 

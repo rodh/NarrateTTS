@@ -182,6 +182,9 @@
                             </div>
                             <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                                 ${iconHtml}
+                                ${(item.play_position || 0) > 0 ? `<button onclick="event.stopPropagation(); resetProgress(${item.id})" class="text-gray-600 hover:text-gray-300 transition" title="Reset progress">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.49 9A9 9 0 105.64 5.64L4 4m16 16l-1.64-1.64A9 9 0 0020.49 9"/></svg>
+                                </button>` : ''}
                                 <button onclick="event.stopPropagation(); deleteItem(${item.id})" class="text-gray-600 hover:text-red-400 transition" title="Delete">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                 </button>
@@ -358,6 +361,25 @@
             if (audio.currentTime > highWaterMark) {
                 highWaterMark = audio.currentTime;
                 debouncedSaveProgress();
+            }
+        }
+
+        async function resetProgress(id) {
+            try {
+                await fetch(`/api/items/${id}/progress`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ position: 0 })
+                });
+                const item = items.find(i => i.id === id);
+                if (item) item.play_position = 0;
+                if (currentItemId === id) {
+                    highWaterMark = 0;
+                    if (audio) audio.currentTime = 0;
+                }
+                renderPreservingScroll();
+            } catch (e) {
+                console.error('Reset progress failed:', e);
             }
         }
 

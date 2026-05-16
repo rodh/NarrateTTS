@@ -32,11 +32,11 @@ async def _llm_summary(text: str, title: str) -> str:
                 "messages": [
                     {
                         "role": "system",
-                        "content": "Write a brief summary of this article for a podcast feed description. Include the main topic and 2-3 key points or takeaways. Keep it to a short paragraph — skimmable at a glance but enough to know what the article covers. No bullet points.",
+                        "content": "Write a brief plain-text summary of this article for a podcast feed description. Include the main topic and 2-3 key points or takeaways. Keep it to a short paragraph — skimmable at a glance but enough to know what the article covers. No bullet points, no markdown, no bold, no headers. Plain text only. Reply with ONLY the summary, nothing else.",
                     },
                     {
                         "role": "user",
-                        "content": f"Title: {title}\n\n{truncated}",
+                        "content": f"Title: {title}\n\n{truncated} /no_think",
                     },
                 ],
                 "max_tokens": 300,
@@ -45,7 +45,21 @@ async def _llm_summary(text: str, title: str) -> str:
         )
         resp.raise_for_status()
         data = resp.json()
-        return data["choices"][0]["message"]["content"].strip()
+        content = data["choices"][0]["message"]["content"]
+        return _clean_response(content)
+
+
+def _clean_response(text: str) -> str:
+    """Strip thinking blocks, markdown formatting, and excess whitespace."""
+    # Remove <think>...</think> blocks
+    text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+    # Remove markdown bold/italic
+    text = re.sub(r'\*{1,3}([^*]+)\*{1,3}', r'\1', text)
+    # Remove markdown headers
+    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+    # Collapse whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
 
 
 def _fallback_summary(text: str) -> str:

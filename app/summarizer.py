@@ -37,8 +37,7 @@ async def _llm_summary(text: str, title: str) -> str:
             json={
                 "model": LLM_MODEL,
                 "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": f"Title: {title}\n\n{truncated}"},
+                    {"role": "user", "content": f"{SYSTEM_PROMPT}\n\nTitle: {title}\n\n{truncated}"},
                 ],
                 "max_tokens": 400,
                 "temperature": 0.3,

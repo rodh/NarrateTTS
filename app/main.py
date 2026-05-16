@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import HOST, PORT, AUDIO_DIR, TTS_SERVICE_URL, KOKORO_MODEL
+from app.config import HOST, PORT, AUDIO_DIR, STATIC_DIR, TTS_SERVICE_URL, KOKORO_MODEL
 from app.db import (
     init_db, add_item, list_items, get_item, delete_item, update_item,
     count_items, update_play_position, create_playlist, list_playlists,
@@ -17,6 +17,7 @@ from app.db import (
 )
 from app.feed import generate_feed, get_base_url
 from app.extractor import extract_from_url, extract_from_text
+from app.summarizer import generate_summary
 
 app = FastAPI(title="NarrateTTS")
 
@@ -79,12 +80,12 @@ async def api_convert(payload: dict):
     item_id = add_item(source_url=source_url, title=title, text=text)
 
     # Start TTS generation in background
-    asyncio.create_task(_process_tts(item_id, text, source_url, voice))
+    asyncio.create_task(_process_tts(item_id, text, title, source_url, voice))
 
     return {"id": item_id, "status": "queued"}
 
 
-async def _process_tts(item_id: int, text: str, source_url: str | None, voice: str = "af_heart"):
+async def _process_tts(item_id: int, text: str, title: str, source_url: str | None, voice: str = "af_heart"):
     """Background task: generate audio for an item."""
     try:
         update_item(item_id, status="processing")
@@ -138,8 +139,14 @@ async def _process_tts(item_id: int, text: str, source_url: str | None, voice: s
         word_count = len(text.split())
         duration = round((word_count / 150) * 60, 1)
 
+        # Generate summary (non-blocking, failure is non-fatal)
+        try:
+            summary = await generate_summary(text, title)
+        except Exception:
+            summary = ""
+
         update_item(item_id, status="completed", audio_path=final_path,
-                    duration_seconds=duration)
+                    duration_seconds=duration, summary=summary)
     except Exception as e:
         update_item(item_id, status="error", error=str(e))
 
@@ -248,6 +255,30 @@ async def api_item_playlists(item_id: int):
     return get_item_playlists(item_id)
 
 
+# --- Backfill ---
+
+@app.post("/api/backfill-summaries")
+async def api_backfill_summaries():
+    """Generate summaries for completed items that don't have one."""
+    items = list_completed_items()
+    count = 0
+    for item in items:
+        if item.get("summary"):
+            continue
+        text = item.get("text", "")
+        title = item.get("title", "")
+        if not text:
+            continue
+        try:
+            summary = await generate_summary(text, title)
+            if summary:
+                update_item(item["id"], summary=summary)
+                count += 1
+        except Exception:
+            continue
+    return {"backfilled": count}
+
+
 # --- Audio Serving ---
 
 @app.get("/audio/{filename}")
@@ -256,6 +287,11 @@ async def serve_audio(filename: str):
     if not audio_file.exists():
         raise HTTPException(status_code=404, detail="Audio file not found")
     return FileResponse(audio_file, media_type="audio/mpeg")
+
+
+# --- Static Files ---
+
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 # --- Web UI ---

@@ -11,3 +11,4 @@ python-multipart
 httpx
 readability-lxml
 lxml-html-clean
+Pillow

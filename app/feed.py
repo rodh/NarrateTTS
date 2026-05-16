@@ -42,6 +42,15 @@ def generate_feed(items: list[dict], title: str, description: str, link: str, ba
     SubElement(channel, "description").text = description
     SubElement(channel, "link").text = link
     SubElement(channel, "generator").text = "NarrateTTS"
+    SubElement(channel, "language").text = "en"
+    SubElement(channel, "lastBuildDate").text = formatdate(localtime=True)
+    SubElement(channel, f"{{{ITUNES_NS}}}author").text = "NarrateTTS"
+    SubElement(channel, f"{{{ITUNES_NS}}}explicit").text = "false"
+    SubElement(channel, f"{{{ITUNES_NS}}}type").text = "episodic"
+    cat = SubElement(channel, f"{{{ITUNES_NS}}}category")
+    cat.set("text", "Technology")
+    img = SubElement(channel, f"{{{ITUNES_NS}}}image")
+    img.set("href", f"{base_url}/static/artwork.png")
 
     for item in items:
         if not item.get("audio_path"):
@@ -60,6 +69,15 @@ def generate_feed(items: list[dict], title: str, description: str, link: str, ba
         SubElement(entry, "title").text = item.get("title", "Untitled")
         SubElement(entry, "guid", isPermaLink="false").text = f"narratetts-{item['id']}"
         SubElement(entry, "pubDate").text = _rfc2822(item.get("created_at", ""))
+
+        summary = item.get("summary", "")
+        if summary:
+            SubElement(entry, "description").text = summary
+            SubElement(entry, f"{{{ITUNES_NS}}}summary").text = summary
+
+        source_url = item.get("source_url")
+        if source_url:
+            SubElement(entry, "link").text = source_url
 
         enclosure = SubElement(entry, "enclosure")
         enclosure.set("url", audio_url)

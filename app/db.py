@@ -60,6 +60,11 @@ def init_db():
         conn.commit()
     except Exception:
         pass
+    try:
+        conn.execute("ALTER TABLE items ADD COLUMN summary TEXT DEFAULT ''")
+        conn.commit()
+    except Exception:
+        pass
     conn.close()
 
 
@@ -102,7 +107,7 @@ def count_items():
 
 
 def update_item(item_id: int, **kwargs):
-    allowed = {"status", "audio_path", "error", "duration_seconds", "updated_at"}
+    allowed = {"status", "audio_path", "error", "duration_seconds", "updated_at", "summary"}
     sets = []
     values = []
     for k, v in kwargs.items():

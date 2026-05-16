@@ -277,6 +277,17 @@
                 });
             }
 
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: item ? item.title : '',
+                    artist: 'NarrateTTS'
+                });
+                navigator.mediaSession.setActionHandler('play', () => togglePlay());
+                navigator.mediaSession.setActionHandler('pause', () => togglePlay());
+                navigator.mediaSession.setActionHandler('seekbackward', () => skipBack());
+                navigator.mediaSession.setActionHandler('seekforward', () => skipForward());
+            }
+
             audio.play();
             document.getElementById('player').classList.remove('hidden');
             document.getElementById('player-title').textContent = item ? item.title : '';

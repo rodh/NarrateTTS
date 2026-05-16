@@ -166,8 +166,8 @@
 
                 // Progress circle
                 let fillSvg = '';
-                if (item.status === 'completed' && item.duration_seconds > 0 && pct > 0) {
-                    const clampedPct = Math.min(pct, 1);
+                if (item.status === 'completed' && (isFinished || (item.duration_seconds > 0 && pct > 0))) {
+                    const clampedPct = isFinished ? 1 : Math.min(pct, 1);
                     let quarter;
                     if (clampedPct >= 0.875) quarter = 4;
                     else if (clampedPct >= 0.625) quarter = 3;

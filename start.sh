@@ -26,6 +26,8 @@ sleep 3
 
 # Start main app
 export TTS_SERVICE_URL=http://localhost:8100
+export LLM_SERVICE_URL=https://lumi-omlx.howlab.us
+export LLM_MODEL=mlx-community/Qwen3.5-9B-8bit
 echo "Starting NarrateTTS on http://localhost:8090..."
 uvicorn app.main:app --host 0.0.0.0 --port 8090 &
 APP_PID=$!

@@ -37,7 +37,7 @@ def _format_duration(seconds: float) -> str:
     return f"{m}:{s:02d}"
 
 
-def generate_feed(items: list[dict], title: str, description: str, link: str, base_url: str) -> str:
+def generate_feed(items: list[dict], title: str, description: str, link: str, base_url: str, artwork_file: str = "artwork.png") -> str:
     rss = Element("rss", version="2.0")
 
     channel = SubElement(rss, "channel")
@@ -53,7 +53,7 @@ def generate_feed(items: list[dict], title: str, description: str, link: str, ba
     cat = SubElement(channel, f"{{{ITUNES_NS}}}category")
     cat.set("text", "Technology")
     img = SubElement(channel, f"{{{ITUNES_NS}}}image")
-    img.set("href", f"{base_url}/static/artwork.png")
+    img.set("href", f"{base_url}/static/{artwork_file}")
 
     for item in items:
         if not item.get("audio_path"):

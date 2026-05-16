@@ -89,6 +89,11 @@ def _assign_uncategorized(item_id: int):
     playlist = get_playlist_by_name("Uncategorized")
     if not playlist:
         pid = create_playlist("Uncategorized", "Items that don't match any category")
+        try:
+            from app.artwork import generate_playlist_artwork
+            generate_playlist_artwork("Uncategorized", pid)
+        except Exception:
+            pass
     else:
         pid = playlist["id"]
     add_item_to_playlist(pid, item_id)

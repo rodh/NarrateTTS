@@ -214,12 +214,16 @@ async def feed_playlist(playlist_id: int, request: Request):
         raise HTTPException(status_code=404, detail="Playlist not found")
     base_url = get_base_url(request)
     items = list_playlist_items(playlist_id, ttl_days=FEED_TTL_DAYS)
+    artwork_file = f"artwork-playlist-{playlist_id}.png"
+    if not (STATIC_DIR / artwork_file).exists():
+        artwork_file = "artwork.png"
     xml = generate_feed(
         items,
         title=playlist["name"],
         description=playlist.get("description", ""),
         link=f"{base_url}/feed/playlist/{playlist_id}",
         base_url=base_url,
+        artwork_file=artwork_file,
     )
     return Response(content=xml, media_type="application/rss+xml; charset=utf-8")
 
@@ -250,6 +254,11 @@ async def api_create_playlist(payload: dict):
         raise HTTPException(status_code=400, detail="Name is required")
     description = payload.get("description", "")
     playlist_id = create_playlist(name, description)
+    try:
+        from app.artwork import generate_playlist_artwork
+        generate_playlist_artwork(name, playlist_id)
+    except Exception:
+        pass
     return {"id": playlist_id, "name": name}
 
 
@@ -326,6 +335,24 @@ async def api_backfill_durations():
         except Exception:
             continue
     return {"updated": count}
+
+
+@app.post("/api/backfill-artwork")
+async def api_backfill_artwork():
+    """Generate artwork for all playlists that don't have one."""
+    from app.artwork import generate_playlist_artwork
+    playlists = list_playlists()
+    count = 0
+    for p in playlists:
+        artwork_path = STATIC_DIR / f"artwork-playlist-{p['id']}.png"
+        if artwork_path.exists():
+            continue
+        try:
+            generate_playlist_artwork(p["name"], p["id"])
+            count += 1
+        except Exception:
+            continue
+    return {"generated": count}
 
 
 @app.post("/api/backfill-categories")

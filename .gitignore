@@ -4,3 +4,4 @@ __pycache__/
 audio/
 .DS_Store
 .env
+static/artwork-playlist-*.png

@@ -295,7 +295,7 @@ async def api_item_playlists(item_id: int):
 
 # --- Backfill ---
 
-@app.post("/api/backfill-summaries")
+@app.get("/api/backfill-summaries")
 async def api_backfill_summaries():
     """Generate summaries for completed items that don't have one."""
     items = list_completed_items()
@@ -317,7 +317,7 @@ async def api_backfill_summaries():
     return {"backfilled": count}
 
 
-@app.post("/api/backfill-durations")
+@app.get("/api/backfill-durations")
 async def api_backfill_durations():
     """Update duration_seconds from actual MP3 files for completed items."""
     from mutagen.mp3 import MP3
@@ -337,7 +337,7 @@ async def api_backfill_durations():
     return {"updated": count}
 
 
-@app.post("/api/backfill-artwork")
+@app.get("/api/backfill-artwork")
 async def api_backfill_artwork():
     """Generate artwork for all playlists that don't have one."""
     from app.artwork import generate_playlist_artwork
@@ -355,7 +355,7 @@ async def api_backfill_artwork():
     return {"generated": count}
 
 
-@app.post("/api/backfill-categories")
+@app.get("/api/backfill-categories")
 async def api_backfill_categories():
     """Auto-categorize completed items that aren't in any playlist."""
     items = list_completed_items()

@@ -226,7 +226,7 @@ async def feed_opml(request: Request):
     xml = generate_opml(all_playlists, base_url)
     return Response(
         content=xml,
-        media_type="text/x-opml; charset=utf-8",
+        media_type="application/octet-stream",
         headers={"Content-Disposition": 'attachment; filename="narratetts.opml"'},
     )
 

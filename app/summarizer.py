@@ -3,7 +3,7 @@ import logging
 
 import httpx
 
-from app.config import LLM_SERVICE_URL, LLM_MODEL
+from app.config import LLM_SERVICE_URL, LLM_MODEL, LLM_API_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +20,13 @@ async def generate_summary(text: str, title: str) -> str:
 
 async def _llm_summary(text: str, title: str) -> str:
     truncated = text[:3000]
+    headers = {}
+    if LLM_API_KEY:
+        headers["Authorization"] = f"Bearer {LLM_API_KEY}"
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(
             f"{LLM_SERVICE_URL}/v1/chat/completions",
+            headers=headers,
             json={
                 "model": LLM_MODEL,
                 "messages": [

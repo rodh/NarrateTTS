@@ -8,6 +8,13 @@ if [ ! -d .venv ]; then
 fi
 source .venv/bin/activate
 
+# Load local overrides (API keys, etc.) if present
+if [ -f .env ]; then
+    set -a
+    source .env
+    set +a
+fi
+
 cleanup() {
     echo ""
     echo "Shutting down..."

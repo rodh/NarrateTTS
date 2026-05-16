@@ -15,7 +15,7 @@ from app.db import (
     remove_item_from_playlist, list_playlist_items, get_item_playlists,
     list_completed_items, get_items_playlist_map,
 )
-from app.feed import generate_feed, get_base_url
+from app.feed import generate_feed, generate_opml, get_base_url
 from app.extractor import extract_from_url, extract_from_text
 from app.summarizer import generate_summary
 from app.categorizer import categorize_item
@@ -217,6 +217,18 @@ async def feed_playlist(playlist_id: int, request: Request):
         base_url=base_url,
     )
     return Response(content=xml, media_type="application/rss+xml; charset=utf-8")
+
+
+@app.get("/feed/opml")
+async def feed_opml(request: Request):
+    base_url = get_base_url(request)
+    all_playlists = list_playlists()
+    xml = generate_opml(all_playlists, base_url)
+    return Response(
+        content=xml,
+        media_type="text/x-opml; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="narratetts.opml"'},
+    )
 
 
 # --- Playlist API ---

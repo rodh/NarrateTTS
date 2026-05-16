@@ -105,3 +105,24 @@ def generate_feed(items: list[dict], title: str, description: str, link: str, ba
             xml = xml.replace(placeholder, f"<![CDATA[{summary}]]>")
 
     return xml
+
+
+def generate_opml(playlists: list[dict], base_url: str) -> str:
+    opml = Element("opml", version="2.0")
+    head = SubElement(opml, "head")
+    SubElement(head, "title").text = "NarrateTTS Feeds"
+    SubElement(head, "dateCreated").text = formatdate(localtime=True)
+
+    body = SubElement(opml, "body")
+    group = SubElement(body, "outline", text="NarrateTTS", title="NarrateTTS")
+
+    SubElement(group, "outline", type="rss",
+               text="All Items", title="All Items",
+               xmlUrl=f"{base_url}/feed")
+
+    for p in playlists:
+        SubElement(group, "outline", type="rss",
+                   text=p["name"], title=p["name"],
+                   xmlUrl=f"{base_url}/feed/playlist/{p['id']}")
+
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' + tostring(opml, encoding="unicode")

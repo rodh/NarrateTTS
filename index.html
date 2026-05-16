@@ -583,7 +583,10 @@
                             <p class="text-sm font-medium">All Items Feed</p>
                             <p class="text-xs text-gray-500 mt-0.5 truncate">${feedBase}/feed</p>
                         </div>
-                        <button onclick="copyFeedUrl('${feedBase}/feed')" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded transition">Copy URL</button>
+                        <div class="flex gap-2">
+                            <button onclick="copyFeedUrl('${feedBase}/feed')" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded transition">Copy URL</button>
+                            <a href="/feed/opml" download="narratetts.opml" class="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded transition inline-block">Export OPML</a>
+                        </div>
                     </div>
                 </div>
                 <div class="mb-4 flex gap-2">

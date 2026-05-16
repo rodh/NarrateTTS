@@ -42,7 +42,6 @@ async def _llm_summary(text: str, title: str) -> str:
                 ],
                 "max_tokens": 400,
                 "temperature": 0.3,
-                "enable_thinking": False,
             },
         )
         resp.raise_for_status()

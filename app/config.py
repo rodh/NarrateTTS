@@ -15,7 +15,7 @@ TTS_SERVICE_URL = os.environ.get("TTS_SERVICE_URL", "")
 
 # LLM Service for summaries (empty = disabled, uses text extraction fallback)
 LLM_SERVICE_URL = os.environ.get("LLM_SERVICE_URL", "")
-LLM_MODEL = os.environ.get("LLM_MODEL", "mlx-community/Qwen3.5-9B-8bit")
+LLM_MODEL = os.environ.get("LLM_MODEL", "mlx-community/gemma-2-9b-it-4bit")
 LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
 
 # Server settings

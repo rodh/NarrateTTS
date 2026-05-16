@@ -17,11 +17,6 @@
         .status-processing { color: #3b82f6; }
         .status-completed { color: #22c55e; }
         .status-error { color: #ef4444; }
-        .progress-bar {
-            height: 2px;
-            border-radius: 1px;
-            transition: width 0.3s ease;
-        }
     </style>
 </head>
 <body class="flex flex-col overflow-hidden" style="height:100dvh">
@@ -169,12 +164,23 @@
                     iconHtml = `<span class="text-red-400 text-xs truncate max-w-[200px]" title="${escapeHtml(item.error || '')}">${escapeHtml(item.error || 'Error')}</span>`;
                 }
 
-                // Progress bar
-                let progressHtml = '';
+                // Progress circle
+                let progressCircle = '';
                 if (item.status === 'completed' && item.duration_seconds > 0 && pct > 0) {
-                    const barPct = Math.min(pct * 100, 100);
-                    const barColor = isFinished ? 'bg-green-500' : 'bg-gray-500';
-                    progressHtml = `<div class="w-full bg-gray-800 rounded-full mt-1.5"><div class="progress-bar ${barColor}" style="width: ${barPct}%"></div></div>`;
+                    const clampedPct = Math.min(pct, 1);
+                    let quarter;
+                    if (clampedPct >= 0.875) quarter = 4;
+                    else if (clampedPct >= 0.625) quarter = 3;
+                    else if (clampedPct >= 0.375) quarter = 2;
+                    else quarter = 1;
+                    const fillColor = isFinished ? '#22c55e' : '#6b7280';
+                    const paths = {
+                        1: `<path d="M8 8 L8 0 A8 8 0 0 1 16 8 Z" fill="${fillColor}"/>`,
+                        2: `<path d="M8 8 L8 0 A8 8 0 0 1 8 16 Z" fill="${fillColor}"/>`,
+                        3: `<path d="M8 8 L8 0 A8 8 0 1 1 0 8 Z" fill="${fillColor}"/>`,
+                        4: `<circle cx="8" cy="8" r="8" fill="${fillColor}"/>`
+                    };
+                    progressCircle = `<svg class="w-3 h-3 flex-shrink-0" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.5" fill="none" stroke="#374151" stroke-width="1"/>${paths[quarter]}</svg>`;
                 }
 
                 // Row click action
@@ -189,8 +195,9 @@
                 ).join('');
 
                 return `
-                    <div class="item-card flex flex-col py-3 border-b border-gray-800/50 cursor-pointer" ${rowClick}>
-                        <div class="flex items-center gap-3 sm:gap-4">
+                    <div class="item-card flex items-center py-3 border-b border-gray-800/50 cursor-pointer gap-2" ${rowClick}>
+                        ${progressCircle}
+                        <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium truncate">${escapeHtml(item.title)}</p>
                                 <div class="flex items-center gap-2 mt-0.5">
@@ -215,7 +222,6 @@
                                 </button>
                             </div>
                         </div>
-                        ${progressHtml}
                     </div>`;
             }).join('');
         }

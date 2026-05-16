@@ -303,6 +303,21 @@
             audio.currentTime = (value / 100) * audio.duration;
         }
 
+        function skipBack() {
+            if (!audio) return;
+            audio.currentTime = Math.max(0, audio.currentTime - 30);
+        }
+
+        function skipForward() {
+            if (!audio) return;
+            const newTime = audio.currentTime + 30;
+            if (newTime >= audio.duration) {
+                audio.currentTime = audio.duration;
+            } else {
+                audio.currentTime = newTime;
+            }
+        }
+
         function updatePlayerUI() {
             if (!audio || !audio.duration) return;
             const pct = (audio.currentTime / audio.duration) * 100;

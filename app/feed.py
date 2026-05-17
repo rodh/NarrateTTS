@@ -146,10 +146,6 @@ def generate_opml(playlists: list[dict], base_url: str) -> str:
     body = SubElement(opml, "body")
     group = SubElement(body, "outline", text="NarrateTTS", title="NarrateTTS")
 
-    SubElement(group, "outline", type="rss",
-               text="All Items", title="All Items",
-               xmlUrl=f"{base_url}/feed")
-
     for p in playlists:
         SubElement(group, "outline", type="rss",
                    text=p["name"], title=p["name"],

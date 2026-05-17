@@ -168,25 +168,34 @@
                     iconHtml = `<span class="text-red-400 text-xs truncate max-w-[200px]" title="${escapeHtml(item.error || '')}">${escapeHtml(item.error || 'Error')}</span>`;
                 }
 
-                // Progress circle
-                let fillSvg = '';
-                if (item.status === 'completed' && (isFinished || (item.duration_seconds > 0 && pct > 0))) {
-                    const clampedPct = isFinished ? 1 : Math.min(pct, 1);
-                    let quarter;
-                    if (clampedPct >= 0.875) quarter = 4;
-                    else if (clampedPct >= 0.625) quarter = 3;
-                    else if (clampedPct >= 0.375) quarter = 2;
-                    else quarter = 1;
-                    const fillColor = isFinished ? '#22c55e' : '#6b7280';
-                    const paths = {
-                        1: `<path d="M8 8 L8 0 A8 8 0 0 1 16 8 Z" fill="${fillColor}"/>`,
-                        2: `<path d="M8 8 L8 0 A8 8 0 0 1 8 16 Z" fill="${fillColor}"/>`,
-                        3: `<path d="M8 8 L8 0 A8 8 0 1 1 0 8 Z" fill="${fillColor}"/>`,
-                        4: `<circle cx="8" cy="8" r="8" fill="${fillColor}"/>`
-                    };
-                    fillSvg = paths[quarter];
+                // Progress indicator (left side)
+                let progressCircle = '';
+                if (item.status === 'completed') {
+                    if (isFinished) {
+                        // Finished: dim gray filled dot
+                        progressCircle = `<svg class="w-3 h-3 flex-shrink-0 mt-[3px]" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="#4b5563"/></svg>`;
+                    } else if (pct > 0) {
+                        // In progress: gray ring with blue arc
+                        const circumference = 2 * Math.PI * 6;
+                        const offset = circumference * (1 - Math.min(pct / 0.8, 1));
+                        progressCircle = `<svg class="w-3 h-3 flex-shrink-0 mt-[3px]" viewBox="0 0 16 16">` +
+                            `<circle cx="8" cy="8" r="6" fill="none" stroke="#374151" stroke-width="2.5"/>` +
+                            `<circle cx="8" cy="8" r="6" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" transform="rotate(-90 8 8)" stroke-linecap="round"/>` +
+                            `</svg>`;
+                    } else {
+                        // New/unlistened: bright blue dot
+                        progressCircle = `<svg class="w-3 h-3 flex-shrink-0 mt-[3px]" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="#3b82f6"/></svg>`;
+                    }
+                } else if (item.status === 'processing') {
+                    // Converting: pulsing blue dot
+                    progressCircle = `<svg class="w-3 h-3 flex-shrink-0 mt-[3px] animate-pulse" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="#3b82f6"/></svg>`;
+                } else if (item.status === 'error') {
+                    // Error: red dot
+                    progressCircle = `<svg class="w-3 h-3 flex-shrink-0 mt-[3px]" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="#ef4444"/></svg>`;
+                } else {
+                    // Queued: invisible spacer for alignment
+                    progressCircle = `<svg class="w-3 h-3 flex-shrink-0 mt-[3px]" viewBox="0 0 16 16"></svg>`;
                 }
-                const progressCircle = `<svg class="w-3 h-3 flex-shrink-0 mt-[3px]" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.5" fill="none" stroke="#374151" stroke-width="1"/>${fillSvg}</svg>`;
 
                 // Row click action
                 const audioFile = item.audio_path ? item.audio_path.split('/').pop() : '';

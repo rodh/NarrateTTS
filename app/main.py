@@ -338,14 +338,14 @@ async def api_backfill_durations():
 
 
 @app.get("/api/backfill-artwork")
-async def api_backfill_artwork():
+async def api_backfill_artwork(force: bool = False):
     """Generate artwork for all playlists that don't have one."""
     from app.artwork import generate_playlist_artwork
     playlists = list_playlists()
     count = 0
     for p in playlists:
         artwork_path = STATIC_DIR / f"artwork-playlist-{p['id']}.png"
-        if artwork_path.exists():
+        if artwork_path.exists() and not force:
             continue
         try:
             generate_playlist_artwork(p["name"], p["id"])

@@ -144,8 +144,9 @@
         <svg id="np-pause-icon" class="hidden" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
       </button>
       <button class="ic" onclick="skipForward()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M4 5l7 7-7 7"/></svg></button>
-      <button class="ic" onclick="navigate('#/feeds')" title="Queue"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h10M16 14l5 3-5 3z"/></svg></button>
+      <button class="ic" onclick="toggleUpNext()" title="Queue"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h10M16 14l5 3-5 3z"/></svg></button>
     </div>
+    <div id="np-queue" class="np-queue hidden"></div>
   </div>
 
     <script type="module" src="/static/js/main.js"></script>

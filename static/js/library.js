@@ -1,5 +1,5 @@
 import * as api from './api.js';
-import { playItem, getCurrentItemId, isAudioPlaying, resetProgress, setItems, stopForDeletedItem } from './player.js';
+import { playItem, getCurrentItemId, isAudioPlaying, resetProgress, setItems, stopForDeletedItem, setList, playFromList } from './player.js';
 import { itemArt } from './imagery.js';
 
 // --- Shared state ---
@@ -54,7 +54,9 @@ export function render() {
     return;
   }
 
-  library.innerHTML = filtered.map(item => {
+  setList('library', filtered);
+
+  library.innerHTML = filtered.map((item, index) => {
     const date = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     const pct = (item.duration_seconds > 0) ? ((item.play_position || 0) / item.duration_seconds) : 0;
     const isFinished = pct >= 0.8 || !!item.consumed_at;
@@ -119,7 +121,7 @@ export function render() {
     // Row click action
     const audioFile = item.audio_path ? item.audio_path.split('/').pop() : '';
     const rowClick = (item.status === 'completed' && item.audio_path)
-      ? `onclick="playItem(${item.id}, '${audioFile}')"`
+      ? `onclick="playFromList('library', ${index})"`
       : '';
 
     const itemPlaylists = playlistMap[item.id] || [];

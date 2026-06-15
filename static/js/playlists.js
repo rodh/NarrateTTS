@@ -3,7 +3,7 @@ import { getPlaylists, getPlaylistItems } from './api.js';
 import { escapeHtml } from './library.js';
 import { navigate } from './router.js';
 import { itemArt } from './imagery.js';
-import { playItem } from './player.js';
+import { playItem, setList, playFromList } from './player.js';
 
 // --- Playlists ---
 
@@ -96,11 +96,12 @@ export async function renderFeedDetail(id) {
   } catch (e) { host.innerHTML = `<p class="text-sm text-[var(--text-muted)]">Couldn't load feed.</p>`; return; }
   if (!playlist) { host.innerHTML = `<p class="text-sm text-[var(--text-muted)]">Feed not found.</p>`; return; }
 
+  setList('feed', items);
   const feedUrl = `${location.origin}/feed/playlist/${playlist.id}`;
   const art = `background:url('/static/artwork-playlist-${playlist.id}.png') center/cover`;
-  const itemsHtml = items.length ? items.map(i => `
+  const itemsHtml = items.length ? items.map((i, index) => `
     <div class="item-card flex items-center gap-3 py-2">
-      <div class="cursor-pointer flex items-center gap-3 flex-1 min-w-0" onclick="playItem(${i.id}, '${i.audio_path ? i.audio_path.split('/').pop() : ''}')">
+      <div class="cursor-pointer flex items-center gap-3 flex-1 min-w-0" onclick="playFromList('feed', ${index})">
         ${itemArt(i)}
         <div class="flex-1 min-w-0">
           <p class="text-sm font-medium truncate">${escapeHtml(i.title)}</p>

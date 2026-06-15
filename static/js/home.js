@@ -1,7 +1,7 @@
 import { getItems } from './library.js';
 import { getPlaylists } from './api.js';
 import { itemArt, gradientFor } from './imagery.js';
-import { playItem } from './player.js';
+import { playItem, setList, playFromList } from './player.js';
 import { navigate } from './router.js';
 
 function fmtMeta(item) {
@@ -21,6 +21,7 @@ export async function render() {
   const host = document.getElementById('screen-home');
   const items = getItems();
   const recent = items.filter(i => i.status === 'completed' && i.audio_path).slice(0, 8);
+  setList('recent', recent);
   const cont = continueItem(items);
 
   let playlists = [];
@@ -46,8 +47,8 @@ export async function render() {
 
   const recentHtml = `
     <div class="section-label">Recently added</div>
-    ${recent.length ? recent.map(i => `
-      <div class="item-card flex items-center gap-3 py-2 cursor-pointer" onclick="playItem(${i.id}, '${i.audio_path ? i.audio_path.split('/').pop() : ''}')">
+    ${recent.length ? recent.map((i, index) => `
+      <div class="item-card flex items-center gap-3 py-2 cursor-pointer" onclick="playFromList('recent', ${index})">
         ${itemArt(i)}
         <div class="flex-1 min-w-0">
           <p class="text-sm font-medium truncate">${escapeHtml(i.title)}</p>

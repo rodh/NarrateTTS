@@ -145,6 +145,17 @@ export function prevInQueue() {
 }
 export function upNext() { return queueIndex >= 0 ? queue.slice(queueIndex + 1) : []; }
 
+export function toggleUpNext() {
+  const el = document.getElementById('np-queue');
+  if (!el) return;
+  const items = upNext();
+  el.innerHTML = items.length
+    ? `<div class="section-label" style="margin:0 0 6px">Up next</div>` + items.map(i =>
+        `<div class="qrow"><div class="qt">${(i.title || '').replace(/</g, '&lt;')}</div></div>`).join('')
+    : `<p class="text-sm" style="color:var(--text-muted)">Nothing up next.</p>`;
+  el.classList.toggle('hidden');
+}
+
 // --- Playback ---
 
 function _play(id, audioFile) {

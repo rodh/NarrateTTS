@@ -71,6 +71,9 @@
         </div>
         <div class="flex items-center gap-2">
             <input id="search" type="text" placeholder="Search..." class="bg-[var(--bg-input)] border border-[var(--border-input)] rounded-lg px-3 py-1.5 text-sm w-36 sm:w-48 focus:outline-none focus:border-[var(--border-focus)]" oninput="render()">
+            <button onclick="toggleSettingsPanel()" id="settings-btn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--bg-button)] hover:bg-[var(--bg-button-hover)] text-[var(--text-secondary)] hover:text-[var(--text-accent)] transition" title="Settings">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </button>
             <button onclick="toggleAddPanel()" id="add-btn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--bg-button)] hover:bg-[var(--bg-button-hover)] text-[var(--text-secondary)] hover:text-[var(--text-accent)] transition">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
             </button>
@@ -87,6 +90,45 @@
                 </select>
                 <button id="convert-btn" onclick="convert()" class="bg-[var(--bg-button-hover)] hover:bg-[var(--bg-button)] text-[var(--text-accent)] px-5 py-2.5 rounded-lg text-sm font-medium transition shrink-0">Convert</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Settings Panel (dropdown) -->
+    <div id="settings-panel" class="hidden border-b border-[var(--border)] bg-[var(--bg-panel)] px-4 sm:px-6 py-4 overflow-hidden">
+        <div class="max-w-md">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-sm font-semibold">iOS Shortcut</p>
+                    <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)] mt-0.5">Send to NarrateTTS from the share sheet</p>
+                    <p class="text-sm text-[var(--text-secondary)] mt-2">Open this page in Safari on your iPhone, tap <span class="text-[var(--text-accent)] font-medium">Add to iPhone</span>, then share any link to <span class="text-[var(--text-accent)] font-medium">Send to NarrateTTS</span> — it captures with your token baked in.</p>
+                </div>
+                <a href="/api/shortcut" download="SendToNarrate.shortcut" class="shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[var(--accent-bg)] text-[var(--accent-text)] font-medium text-sm hover:opacity-80 transition no-underline">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path stroke-linecap="round" d="M11 18h2"/></svg>
+                    Add to iPhone
+                </a>
+            </div>
+            <div class="mt-3 rounded-lg border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2">
+                <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)]">Endpoint</p>
+                <p id="settings-endpoint" class="font-mono text-xs text-[var(--text-secondary)] truncate">…</p>
+            </div>
+            <div class="mt-2 flex items-center justify-between gap-2 rounded-lg border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2">
+                <div class="min-w-0">
+                    <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)]">Token</p>
+                    <p id="settings-token" class="font-mono text-xs text-[var(--text-secondary)] truncate">…</p>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                    <button onclick="toggleTokenReveal()" id="token-reveal-btn" class="p-1.5 rounded-md text-[var(--text-faint)] hover:text-[var(--text-accent)] transition" title="Show token">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </button>
+                    <button onclick="copyToken()" id="token-copy-btn" class="p-1.5 rounded-md text-[var(--text-faint)] hover:text-[var(--text-accent)] transition" title="Copy token">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                    </button>
+                </div>
+            </div>
+            <button onclick="regenerateToken()" class="mt-2 inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[var(--text-faint)] hover:text-[var(--text-secondary)] transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.49 9A9 9 0 105.64 5.64L4 4m16 16l-1.64-1.64A9 9 0 0020.49 9"/></svg>
+                Regenerate token
+            </button>
         </div>
     </div>
 
@@ -831,6 +873,64 @@
                 }
             } catch (e) {
                 console.error('Toggle playlist item failed:', e);
+            }
+        }
+
+        // --- Settings / Shortcut token ---
+
+        let shortcutToken = null;
+        let tokenRevealed = false;
+
+        function renderToken() {
+            const el = document.getElementById('settings-token');
+            if (!shortcutToken) { el.textContent = '…'; return; }
+            el.textContent = tokenRevealed
+                ? shortcutToken
+                : shortcutToken.slice(0, 6) + '•'.repeat(18) + shortcutToken.slice(-4);
+        }
+
+        async function loadShortcutToken() {
+            document.getElementById('settings-endpoint').textContent = location.origin + '/api/shortcut';
+            try {
+                const res = await fetch('/api/settings/token');
+                const data = await res.json();
+                shortcutToken = data.token;
+                renderToken();
+            } catch (e) {
+                console.error('Failed to load token:', e);
+            }
+        }
+
+        function toggleSettingsPanel() {
+            const panel = document.getElementById('settings-panel');
+            const isHidden = panel.classList.toggle('hidden');
+            if (!isHidden) loadShortcutToken();
+        }
+
+        function toggleTokenReveal() {
+            tokenRevealed = !tokenRevealed;
+            renderToken();
+        }
+
+        function copyToken() {
+            if (!shortcutToken) return;
+            navigator.clipboard.writeText(shortcutToken).then(() => {
+                const btn = document.getElementById('token-copy-btn');
+                btn.classList.add('text-[var(--text-accent)]');
+                setTimeout(() => btn.classList.remove('text-[var(--text-accent)]'), 1200);
+            });
+        }
+
+        async function regenerateToken() {
+            if (!confirm('Regenerate token? The shortcut already installed on your phone will stop working until you re-add it.')) return;
+            try {
+                const res = await fetch('/api/settings/token', { method: 'POST' });
+                const data = await res.json();
+                shortcutToken = data.token;
+                tokenRevealed = true;
+                renderToken();
+            } catch (e) {
+                console.error('Regenerate failed:', e);
             }
         }
 

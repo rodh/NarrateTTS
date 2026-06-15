@@ -1,5 +1,6 @@
 import * as api from './api.js';
 import { playItem, getCurrentItemId, isAudioPlaying, resetProgress, setItems, stopForDeletedItem } from './player.js';
+import { itemArt } from './imagery.js';
 
 // --- Shared state ---
 let items = [];
@@ -130,6 +131,7 @@ export function render() {
                     <div class="item-card flex items-start py-3 border-b border-[var(--border-subtle)] cursor-pointer gap-2" ${rowClick}>
                         ${progressCircle}
                         <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                            ${itemArt(item)}
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium truncate">${escapeHtml(item.title)}</p>
                                 <div class="flex items-center gap-2 mt-0.5">

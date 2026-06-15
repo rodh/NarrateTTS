@@ -81,3 +81,30 @@ def test_shortcut_rejects_blank_input(client):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert resp.status_code == 400
+
+
+import plistlib
+
+
+def test_download_returns_signed_or_unsigned_shortcut(client):
+    resp = client.get("/api/shortcut")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("application/octet-stream")
+    assert "SendToNarrate.shortcut" in resp.headers["content-disposition"]
+    assert len(resp.content) > 0
+
+
+def test_download_embeds_current_token_when_unsigned(client, monkeypatch):
+    # Force the unsigned path so we can parse the plist back out and assert the token.
+    import app.main as main
+    monkeypatch.setattr(main, "sign_shortcut", lambda data: (data, False))
+
+    token = client.get("/api/settings/token").json()["token"]
+    resp = client.get("/api/shortcut")
+    assert resp.headers.get("x-shortcut-unsigned") == "true"
+
+    plist = plistlib.loads(resp.content)
+    headers = plist["WFWorkflowActions"][1]["WFWorkflowActionParameters"]["WFHTTPHeaders"][
+        "Value"
+    ]["WFDictionaryFieldValueItems"]
+    assert headers[0]["WFValue"]["Value"]["string"] == f"Bearer {token}"

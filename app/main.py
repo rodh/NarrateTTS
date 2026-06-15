@@ -19,6 +19,7 @@ from app.db import (
     ensure_token, regenerate_token, verify_token,
 )
 from app.feed import generate_feed, generate_opml, get_base_url
+from app.shortcuts import build_shortcut_plist, serialize_plist, sign_shortcut
 from app.extractor import extract_from_url, extract_from_text
 from app.summarizer import generate_summary
 from app.categorizer import categorize_item
@@ -111,6 +112,38 @@ async def api_shortcut(payload: dict, authorization: str | None = Header(default
         url=input_str if is_url else None,
         text_input=None if is_url else input_str,
         voice=DEFAULT_VOICE,
+    )
+
+
+def _api_base_url(request: Request) -> str:
+    """Reconstruct the externally-visible base URL (honours reverse-proxy headers)."""
+    host = request.headers.get(
+        "x-forwarded-host", request.headers.get("host", "localhost:8090")
+    )
+    proto = request.headers.get("x-forwarded-proto")
+    if not proto:
+        private = host.startswith(("localhost", "127.", "192.168.", "10.", "172."))
+        proto = "http" if private else "https"
+    return f"{proto}://{host}"
+
+
+@app.get("/api/shortcut")
+async def get_shortcut(request: Request):
+    """Serve a 'Send to NarrateTTS' .shortcut with the API token baked in."""
+    token = ensure_token()
+    api_url = f"{_api_base_url(request)}/api/shortcut"
+    plist = build_shortcut_plist(api_url, token)
+    signed, did_sign = sign_shortcut(serialize_plist(plist))
+
+    headers = {
+        "Content-Disposition": 'attachment; filename="SendToNarrate.shortcut"',
+    }
+    if not did_sign:
+        headers["X-Shortcut-Unsigned"] = "true"
+    return Response(
+        content=signed,
+        media_type="application/octet-stream",
+        headers=headers,
     )
 
 

@@ -6,7 +6,8 @@ from app.shortcuts import build_shortcut_plist, serialize_plist, sign_shortcut
 def test_plist_embeds_url_and_token():
     plist = build_shortcut_plist("https://narrate.example/api/shortcut", "abc123")
     assert plist["WFWorkflowTypes"] == ["ActionExtension"]
-    assert "WFURLContentItem" in plist["WFWorkflowInputContentItemClasses"]
+    # Text-only input (no URL content item) to avoid the per-site permission prompt.
+    assert plist["WFWorkflowInputContentItemClasses"] == ["WFStringContentItem"]
 
     actions = plist["WFWorkflowActions"]
     url_action = actions[0]["WFWorkflowActionParameters"]["WFURLActionURL"]
@@ -38,3 +39,16 @@ def test_sign_falls_back_when_cli_unavailable(monkeypatch):
     signed, did_sign = sign_shortcut(payload)
     assert signed == payload
     assert did_sign is False
+
+
+def test_request_action_sets_url_explicitly():
+    """The request action must name our endpoint explicitly (WFURL). Implicit
+    action-output chaining does not work on-device, so without WFURL the request
+    POSTs the shared URL instead and nothing saves."""
+    plist = build_shortcut_plist("https://narrate.example/api/shortcut", "abc123")
+    download = next(
+        a for a in plist["WFWorkflowActions"]
+        if a["WFWorkflowActionIdentifier"] == "is.workflow.actions.downloadurl"
+    )
+    assert download["WFWorkflowActionParameters"]["WFURL"] == "https://narrate.example/api/shortcut"
+    assert download["WFWorkflowActionParameters"]["WFHTTPMethod"] == "POST"

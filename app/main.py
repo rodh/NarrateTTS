@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import HOST, PORT, AUDIO_DIR, STATIC_DIR, TTS_SERVICE_URL, KOKORO_MODEL, KOKORO_VOICES, FEED_TTL_DAYS, DEFAULT_VOICE
+from app.config import HOST, PORT, AUDIO_DIR, STATIC_DIR, TTS_SERVICE_URL, KOKORO_MODEL, KOKORO_VOICES, FEED_TTL_DAYS, DEFAULT_VOICE, PUBLIC_BASE_URL
 from app.db import (
     init_db, add_item, list_items, get_item, delete_item, update_item,
     count_items, update_play_position, create_playlist, list_playlists,
@@ -131,7 +131,8 @@ def _api_base_url(request: Request) -> str:
 async def get_shortcut(request: Request):
     """Serve a 'Send to NarrateTTS' .shortcut with the API token baked in."""
     token = ensure_token()
-    api_url = f"{_api_base_url(request)}/api/shortcut"
+    base = PUBLIC_BASE_URL.rstrip("/") if PUBLIC_BASE_URL else _api_base_url(request)
+    api_url = f"{base}/api/shortcut"
     plist = build_shortcut_plist(api_url, token)
     signed, did_sign = sign_shortcut(serialize_plist(plist))
 

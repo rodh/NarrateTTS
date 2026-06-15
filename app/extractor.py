@@ -4,12 +4,25 @@ from readability import Document
 from app.config import AUDIO_DIR
 
 
+# Many sites 403 / serve degraded content to non-browser clients. Present a
+# realistic browser identity so server-side extraction succeeds for most pages
+# (hard paywalls that require login still won't extract — that's expected).
+_BROWSER_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+
+
 async def extract_from_url(url: str) -> dict[str, str]:
     """Extract article content from a URL.
 
     Returns dict with 'title' and 'text' keys.
     """
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with httpx.AsyncClient(timeout=20.0, headers=_BROWSER_HEADERS) as client:
         response = await client.get(url, follow_redirects=True)
         response.raise_for_status()
 

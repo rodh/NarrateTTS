@@ -2,9 +2,11 @@
 
 Ports the buildShortcutPlist/sign logic from howlab-tools to Python: the workflow
 is an ActionExtension (appears in the Share Sheet) that POSTs the shared input to
-/api/shortcut with the API token baked in as a Bearer header. The binary plist is
-produced with the stdlib plistlib; signing shells out to the macOS `shortcuts` CLI
-so the resulting file installs without "Allow Untrusted Shortcuts".
+/api/shortcut with the API token baked in as a Bearer header. The request action
+names the endpoint explicitly (WFURL) because implicit action-output chaining does
+not work on-device here. The binary plist is produced with stdlib plistlib; signing
+shells out to the macOS `shortcuts` CLI so the file installs without "Allow
+Untrusted Shortcuts".
 """
 
 import plistlib
@@ -31,8 +33,11 @@ def build_shortcut_plist(api_url: str, token: str) -> dict:
             "WFWorkflowIconGlyphNumber": 59765,
         },
         "WFWorkflowTypes": ["ActionExtension"],
+        # Text only (no WFURLContentItem): if the shortcut accepts the shared item
+        # as a URL, iOS prompts for that site's domain on every new site shared.
+        # Receiving it as text avoids the per-site prompt; the URL still rides along
+        # in the request body as a string.
         "WFWorkflowInputContentItemClasses": [
-            "WFURLContentItem",
             "WFStringContentItem",
         ],
         "WFWorkflowActions": [
@@ -43,6 +48,10 @@ def build_shortcut_plist(api_url: str, token: str) -> dict:
             {
                 "WFWorkflowActionIdentifier": "is.workflow.actions.downloadurl",
                 "WFWorkflowActionParameters": {
+                    # Explicit URL: implicit chaining from the url action does not
+                    # work on-device here, so the request must name our endpoint
+                    # directly or it POSTs the shared URL instead and nothing saves.
+                    "WFURL": api_url,
                     "WFHTTPMethod": "POST",
                     "WFHTTPBodyType": "JSON",
                     "WFHTTPHeaders": {

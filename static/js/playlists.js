@@ -1,10 +1,13 @@
 import * as api from './api.js';
+import { getPlaylists, getPlaylistItems } from './api.js';
 import { escapeHtml } from './library.js';
+import { navigate } from './router.js';
+import { itemArt } from './imagery.js';
+import { playItem } from './player.js';
 
 // --- Playlists ---
 
 let playlists = [];
-let viewingPlaylistId = null;
 
 export async function loadPlaylists() {
   try {
@@ -43,7 +46,7 @@ function renderPlaylists() {
   } else {
     html += playlists.map(p => `
                     <div class="item-card flex items-center justify-between py-3 border-b border-[var(--border-subtle)]">
-                        <div class="flex-1 min-w-0 cursor-pointer" onclick="viewPlaylist(${p.id})">
+                        <div class="flex-1 min-w-0 cursor-pointer" onclick="navigate('#/feed/' + ${p.id})">
                             <p class="text-sm font-medium truncate">${escapeHtml(p.name)}</p>
                             <p class="text-xs text-[var(--text-muted)] mt-0.5">${p.item_count} item${p.item_count !== 1 ? 's' : ''}</p>
                         </div>
@@ -76,63 +79,63 @@ export async function confirmDeletePlaylist(id) {
   if (!confirm('Delete this playlist?')) return;
   try {
     await api.deletePlaylist(id);
-    loadPlaylists();
+    navigate('#/feeds');
   } catch (e) {
     console.error('Delete playlist failed:', e);
   }
 }
 
-export async function viewPlaylist(id) {
-  viewingPlaylistId = id;
-  const playlist = playlists.find(p => p.id === id);
+export async function renderFeedDetail(id) {
+  const host = document.getElementById('screen-feed-detail');
+  host.innerHTML = `<p class="text-sm text-[var(--text-muted)]">Loading…</p>`;
+  let playlist = null, items = [];
   try {
-    const playlistItems = await api.getPlaylistItems(id);
-    renderPlaylistDetail(playlist, playlistItems);
-  } catch (e) {
-    console.error('Failed to load playlist items:', e);
-  }
-}
+    const all = await getPlaylists();
+    playlist = all.find(p => String(p.id) === String(id));
+    items = await getPlaylistItems(id);
+  } catch (e) { host.innerHTML = `<p class="text-sm text-[var(--text-muted)]">Couldn't load feed.</p>`; return; }
+  if (!playlist) { host.innerHTML = `<p class="text-sm text-[var(--text-muted)]">Feed not found.</p>`; return; }
 
-function renderPlaylistDetail(playlist, playlistItems) {
-  const view = document.getElementById('playlists-view');
-  const feedBase = location.origin;
-  let html = `
-                <div class="mb-4">
-                    <button onclick="loadPlaylists()" class="text-sm text-[var(--text-muted)] hover:text-[var(--text-accent)] transition">&larr; All Playlists</button>
-                </div>
-                <div class="mb-4 p-3 bg-[var(--bg-input)] rounded-lg">
-                    <p class="text-sm font-medium">${escapeHtml(playlist.name)}</p>
-                    <div class="flex items-center justify-between mt-1">
-                        <p class="text-xs text-[var(--text-muted)] truncate">${feedBase}/feed/playlist/${playlist.id}</p>
-                        <button onclick="copyFeedUrl('${feedBase}/feed/playlist/${playlist.id}')" class="text-xs bg-[var(--bg-button)] hover:bg-[var(--bg-button-hover)] px-3 py-1.5 rounded transition ml-2">Copy URL</button>
-                    </div>
-                </div>`;
+  const feedUrl = `${location.origin}/feed/playlist/${playlist.id}`;
+  const art = `background:url('/static/artwork-playlist-${playlist.id}.png') center/cover`;
+  const itemsHtml = items.length ? items.map(i => `
+    <div class="item-card flex items-center gap-3 py-2">
+      <div class="cursor-pointer flex items-center gap-3 flex-1 min-w-0" onclick="playItem(${i.id}, '${i.audio_path ? i.audio_path.split('/').pop() : ''}')">
+        ${itemArt(i)}
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium truncate">${escapeHtml(i.title)}</p>
+          <p class="text-xs text-[var(--text-muted)] truncate">${i.duration_seconds ? Math.round(i.duration_seconds/60)+' min' : ''}</p>
+        </div>
+      </div>
+      <button onclick="removeFromPlaylist(${playlist.id}, ${i.id})" class="text-[var(--text-faint)] hover:text-red-400 transition flex-shrink-0" title="Remove">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>`).join('') : `<p class="text-sm text-[var(--text-muted)]">No items yet. Add some from the Library.</p>`;
 
-  if (playlistItems.length === 0) {
-    html += `<p class="text-[var(--text-muted)] text-sm text-center mt-8">No items in this playlist. Add items from the Library tab.</p>`;
-  } else {
-    html += playlistItems.map(item => {
-      const date = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      return `
-                    <div class="item-card flex items-center justify-between py-3 border-b border-[var(--border-subtle)]">
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium truncate">${escapeHtml(item.title)}</p>
-                            <span class="text-xs text-[var(--text-muted)]">${date}</span>
-                        </div>
-                        <button onclick="removeFromPlaylist(${playlist.id}, ${item.id})" class="text-[var(--text-faint)] hover:text-red-400 transition flex-shrink-0 ml-2" title="Remove from playlist">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </button>
-                    </div>`;
-    }).join('');
-  }
-
-  view.innerHTML = html;
+  host.innerHTML = `
+    <button onclick="navigate('#/feeds')" class="text-sm text-[var(--text-muted)] hover:text-[var(--text-accent)] transition mb-3">&larr; Feeds</button>
+    <div class="flex items-center gap-4 mb-3">
+      <div style="width:96px;height:96px;border-radius:var(--radius);${art};flex:0 0 auto"></div>
+      <div class="min-w-0">
+        <h2 class="text-xl font-bold truncate">${escapeHtml(playlist.name)}</h2>
+        <p class="text-xs text-[var(--text-muted)] mt-0.5">${playlist.item_count} item${playlist.item_count !== 1 ? 's' : ''}</p>
+      </div>
+    </div>
+    ${playlist.description ? `<p class="text-sm text-[var(--text-secondary)] mb-3">${escapeHtml(playlist.description)}</p>` : ''}
+    <div class="flex items-center gap-2 mb-4">
+      <button onclick="copyFeedUrl('${feedUrl}')" class="btn-accent text-sm px-4 py-2 transition">Copy feed URL</button>
+      <a href="/feed/opml" download="narratetts.opml" class="text-sm bg-[var(--bg-button)] hover:bg-[var(--bg-button-hover)] px-3 py-2 rounded-full transition">OPML</a>
+      <button onclick="confirmDeletePlaylist(${playlist.id})" class="text-[var(--text-faint)] hover:text-red-400 transition ml-auto" title="Delete feed">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      </button>
+    </div>
+    ${itemsHtml}`;
 }
 
 export async function removeFromPlaylist(playlistId, itemId) {
   try {
     await api.removeItemFromPlaylist(playlistId, itemId);
-    viewPlaylist(playlistId);
+    renderFeedDetail(playlistId);
   } catch (e) {
     console.error('Remove from playlist failed:', e);
   }

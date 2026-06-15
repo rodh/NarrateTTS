@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 .venv/
 audio/
+data/
 .DS_Store
 .env
 static/artwork-playlist-*.png

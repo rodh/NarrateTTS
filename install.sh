@@ -25,23 +25,6 @@ if [ -z "$PYTHON" ]; then
     exit 1
 fi
 
-# Check for espeak-ng (required by phonemizer for text processing)
-if ! command -v espeak-ng &> /dev/null; then
-    echo "Installing espeak-ng..."
-    if command -v brew &> /dev/null; then
-        brew install espeak-ng
-    else
-        echo "Error: espeak-ng not found. Install with: brew install espeak-ng"
-        exit 1
-    fi
-fi
-
-# Check for ffmpeg (optional, for WAV→MP3 conversion in local mode)
-if ! command -v ffmpeg &> /dev/null; then
-    echo "Note: ffmpeg not found (optional). Without it, local engine saves WAV instead of MP3."
-    echo "  Install with: brew install ffmpeg"
-fi
-
 # Create virtual environment
 if [ ! -d .venv ]; then
     echo ""
@@ -57,21 +40,6 @@ echo ""
 echo "Installing Python dependencies..."
 pip install -q --upgrade pip
 pip install -q -r requirements.txt
-
-# Download spacy English model (used by misaki for tokenization)
-echo ""
-echo "Downloading spacy English model..."
-python -m spacy download en_core_web_sm -q 2>&1 || true
-
-# Pre-download the Kokoro model so first run is fast
-echo ""
-echo "Pre-downloading Kokoro TTS model (~500MB)..."
-python3 -c "
-from mlx_audio.utils import load_model
-print('Loading Kokoro-82M model...')
-model = load_model('mlx-community/Kokoro-82M-bf16')
-print('Model downloaded and cached.')
-"
 
 echo ""
 echo "=== Installation complete ==="

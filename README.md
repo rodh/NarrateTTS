@@ -1,20 +1,21 @@
 # NarrateTTS
 
-Local text-to-speech. Paste a URL or text, get audio instantly. Runs on Apple Silicon — no cloud APIs, no costs, no privacy trade-offs.
+Local text-to-speech. Paste a URL or text, get audio instantly. Self-hosted — no cloud APIs, no costs, no privacy trade-offs.
 
-Uses [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) via [mlx-audio](https://github.com/Blaizzy/mlx-audio) for natural-sounding voices with native Metal/MLX GPU acceleration.
+Uses [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) via a standalone [mlx-audio](https://github.com/Blaizzy/mlx-audio) service for natural-sounding voices with native Metal/MLX GPU acceleration.
 
 ## Quick Start
 
 ```bash
-# One-time setup (installs dependencies, downloads Kokoro model ~500MB)
+# One-time setup (installs dependencies)
 ./install.sh
 
 # Run
 ./start.sh
 ```
 
-App runs at `http://localhost:8090`. TTS server runs at `http://localhost:8100`.
+App runs at `http://localhost:8090`. It calls a standalone mlx-audio TTS service
+set via `TTS_SERVICE_URL` (default `http://macstudio1.lab:8203`).
 
 ## How It Works
 
@@ -60,12 +61,13 @@ Serve a completed audio file.
 ## Architecture
 
 ```
-NarrateTTS App (port 8090)  →  mlx-audio server (port 8100)
+NarrateTTS App (port 8090)  →  standalone mlx-audio service (TTS_SERVICE_URL)
 FastAPI, web UI, jobs            Kokoro-82M, MLX GPU accel
                                  OpenAI-compatible API
 ```
 
-Both services run natively on Apple Silicon for full Metal/MLX GPU acceleration. Docker is available as a fallback but uses CPU inference (no MLX in Docker on Mac).
+The TTS service runs separately (e.g. on a Mac for Metal/MLX GPU acceleration);
+NarrateTTS is a pure client and can run anywhere it can reach `TTS_SERVICE_URL`.
 
 ## Integration Pattern
 

@@ -11,8 +11,23 @@ STATIC_DIR = BASE_DIR / "static"
 DEFAULT_VOICE = os.environ.get("TTS_VOICE", "af_heart")
 KOKORO_MODEL = os.environ.get("KOKORO_MODEL", "mlx-community/Kokoro-82M-bf16")
 
-# TTS Service (set to empty string to use local engine)
-TTS_SERVICE_URL = os.environ.get("TTS_SERVICE_URL", "")
+# Standalone mlx-audio (Kokoro) TTS service
+TTS_SERVICE_URL = os.environ.get("TTS_SERVICE_URL", "http://macstudio1.lab:8203")
+
+# Kokoro voices available via the TTS service
+KOKORO_VOICES = [
+    {"id": "af_heart", "name": "Heart (F)"},
+    {"id": "af_bella", "name": "Bella (F)"},
+    {"id": "af_nicole", "name": "Nicole (F)"},
+    {"id": "af_sarah", "name": "Sarah (F)"},
+    {"id": "af_sky", "name": "Sky (F)"},
+    {"id": "am_adam", "name": "Adam (M)"},
+    {"id": "am_michael", "name": "Michael (M)"},
+    {"id": "bf_emma", "name": "Emma (F, UK)"},
+    {"id": "bf_isabella", "name": "Isabella (F, UK)"},
+    {"id": "bm_george", "name": "George (M, UK)"},
+    {"id": "bm_lewis", "name": "Lewis (M, UK)"},
+]
 
 # LLM Service for summaries (empty = disabled, uses text extraction fallback)
 LLM_SERVICE_URL = os.environ.get("LLM_SERVICE_URL", "")

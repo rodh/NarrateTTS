@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import HOST, PORT, AUDIO_DIR, STATIC_DIR, TTS_SERVICE_URL, KOKORO_MODEL, FEED_TTL_DAYS
+from app.config import HOST, PORT, AUDIO_DIR, STATIC_DIR, TTS_SERVICE_URL, KOKORO_MODEL, KOKORO_VOICES, FEED_TTL_DAYS
 from app.db import (
     init_db, add_item, list_items, get_item, delete_item, update_item,
     count_items, update_play_position, create_playlist, list_playlists,
@@ -56,7 +56,6 @@ async def api_items_playlist_map():
 @app.get("/api/voices")
 async def api_voices():
     """Return list of available Kokoro voices."""
-    from app.tts_engine import KOKORO_VOICES
     return {"voices": KOKORO_VOICES}
 
 
@@ -99,48 +98,32 @@ async def _process_tts(item_id: int, text: str, title: str, source_url: str | No
 
         voice = voice or "af_heart"
 
-        if TTS_SERVICE_URL:
-            # Call mlx-audio server (OpenAI-compatible endpoint)
-            async with httpx.AsyncClient(timeout=300) as client:
-                resp = await client.post(
-                    f"{TTS_SERVICE_URL}/v1/audio/speech",
-                    json={
-                        "model": KOKORO_MODEL,
-                        "input": text,
-                        "voice": voice,
-                        "response_format": "mp3",
-                        "lang_code": "a" if not voice.startswith("b") else "b",
-                        "verbose": False,
-                    },
-                )
-                if resp.status_code != 200:
-                    raise RuntimeError(f"TTS service error: {resp.text}")
+        if not TTS_SERVICE_URL:
+            raise RuntimeError("TTS_SERVICE_URL is not configured")
 
-                filename = f"{item_id}.mp3"
-                audio_path = AUDIO_DIR / filename
+        # Call the standalone mlx-audio service (OpenAI-compatible endpoint)
+        async with httpx.AsyncClient(timeout=300) as client:
+            resp = await client.post(
+                f"{TTS_SERVICE_URL}/v1/audio/speech",
+                json={
+                    "model": KOKORO_MODEL,
+                    "input": text,
+                    "voice": voice,
+                    "response_format": "mp3",
+                    "lang_code": "a" if not voice.startswith("b") else "b",
+                    "verbose": False,
+                },
+            )
+            if resp.status_code != 200:
+                raise RuntimeError(f"TTS service error: {resp.text}")
 
-                with open(audio_path, "wb") as f:
-                    f.write(resp.content)
+            filename = f"{item_id}.mp3"
+            audio_path = AUDIO_DIR / filename
 
-                final_path = str(audio_path)
-        else:
-            # Fallback to local engine
-            from app.tts_engine import engine as local_engine
-            wav_path = await local_engine.generate(text, voice=voice)
+            with open(audio_path, "wb") as f:
+                f.write(resp.content)
 
-            # Convert WAV to MP3 if ffmpeg is available
-            mp3_path = AUDIO_DIR / f"{item_id}.mp3"
-            try:
-                import subprocess
-                subprocess.run(
-                    ["ffmpeg", "-y", "-i", str(wav_path), str(mp3_path)],
-                    capture_output=True,
-                    check=True,
-                )
-                wav_path.unlink(missing_ok=True)
-                final_path = str(mp3_path)
-            except (FileNotFoundError, subprocess.CalledProcessError):
-                final_path = str(wav_path)
+            final_path = str(audio_path)
 
         # Read actual audio duration from the MP3 file
         try:

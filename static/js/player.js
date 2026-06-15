@@ -113,18 +113,19 @@ const lists = {};         // key -> ordered array of playable item objects
 let queue = [];
 let queueIndex = -1;
 
-export function setList(key, arr) {
-  lists[key] = (arr || []).filter(i => i.status === 'completed' && i.audio_path);
-}
+// Store the list AS-IS so row indices (which index the full rendered array) stay
+// aligned. Non-playable rows (processing/error) are skipped only when advancing.
+export function setList(key, arr) { lists[key] = arr || []; }
 
 function _fileOf(item) { return item.audio_path ? item.audio_path.split('/').pop() : ''; }
+function _playable(item) { return !!(item && item.status === 'completed' && item.audio_path); }
 
 export function playFromList(key, index) {
   const arr = lists[key] || [];
-  if (!arr.length) return;
+  const item = arr[index];
+  if (!_playable(item)) return;
   queue = arr;
-  queueIndex = Math.max(0, Math.min(index, arr.length - 1));
-  const item = queue[queueIndex];
+  queueIndex = index;
   _play(item.id, _fileOf(item));
 }
 
@@ -134,16 +135,18 @@ export function playItem(id, file) {   // single play, clears any queue context
 }
 
 export function nextInQueue() {
-  if (queueIndex >= 0 && queueIndex < queue.length - 1) {
-    queueIndex++; const it = queue[queueIndex]; _play(it.id, _fileOf(it)); return true;
+  for (let i = queueIndex + 1; i < queue.length; i++) {
+    if (_playable(queue[i])) { queueIndex = i; _play(queue[i].id, _fileOf(queue[i])); return true; }
   }
   return false;
 }
 export function prevInQueue() {
-  if (queueIndex > 0) { queueIndex--; const it = queue[queueIndex]; _play(it.id, _fileOf(it)); return true; }
+  for (let i = queueIndex - 1; i >= 0; i--) {
+    if (_playable(queue[i])) { queueIndex = i; _play(queue[i].id, _fileOf(queue[i])); return true; }
+  }
   return false;
 }
-export function upNext() { return queueIndex >= 0 ? queue.slice(queueIndex + 1) : []; }
+export function upNext() { return queueIndex >= 0 ? queue.slice(queueIndex + 1).filter(_playable) : []; }
 
 export function toggleUpNext() {
   const el = document.getElementById('np-queue');

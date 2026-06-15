@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import HOST, PORT, AUDIO_DIR, STATIC_DIR, TTS_SERVICE_URL, KOKORO_MODEL, KOKORO_VOICES, FEED_TTL_DAYS
+from app.config import HOST, PORT, AUDIO_DIR, STATIC_DIR, TTS_SERVICE_URL, KOKORO_MODEL, KOKORO_VOICES, FEED_TTL_DAYS, DEFAULT_VOICE
 from app.db import (
     init_db, add_item, list_items, get_item, delete_item, update_item,
     count_items, update_play_position, create_playlist, list_playlists,
@@ -60,6 +60,25 @@ async def api_voices():
     return {"voices": KOKORO_VOICES}
 
 
+async def _create_conversion(url: str | None, text_input: str | None, voice: str) -> dict:
+    """Extract content, create a queued item, and kick off background TTS."""
+    if url:
+        try:
+            extracted = await extract_from_url(url)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to extract content: {str(e)}")
+    elif text_input:
+        extracted = extract_from_text(text_input)
+    else:
+        raise HTTPException(status_code=400, detail="Provide 'url' or 'text'")
+
+    title = extracted["title"]
+    text = extracted["text"]
+    item_id = add_item(source_url=url, title=title, text=text)
+    asyncio.create_task(_process_tts(item_id, text, title, url, voice))
+    return {"id": item_id, "status": "queued"}
+
+
 @app.post("/api/convert")
 async def api_convert(payload: dict):
     """Convert text or URL to audio.
@@ -68,28 +87,8 @@ async def api_convert(payload: dict):
     """
     source_url = payload.get("url")
     text_input = payload.get("text")
-    voice = payload.get("voice") or "af_heart"
-
-    if source_url:
-        try:
-            extracted = await extract_from_url(source_url)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to extract content: {str(e)}")
-        title = extracted["title"]
-        text = extracted["text"]
-    elif text_input:
-        extracted = extract_from_text(text_input)
-        title = extracted["title"]
-        text = extracted["text"]
-    else:
-        raise HTTPException(status_code=400, detail="Provide 'url' or 'text'")
-
-    item_id = add_item(source_url=source_url, title=title, text=text)
-
-    # Start TTS generation in background
-    asyncio.create_task(_process_tts(item_id, text, title, source_url, voice))
-
-    return {"id": item_id, "status": "queued"}
+    voice = payload.get("voice") or DEFAULT_VOICE
+    return await _create_conversion(source_url, text_input, voice)
 
 
 async def _process_tts(item_id: int, text: str, title: str, source_url: str | None, voice: str = "af_heart"):

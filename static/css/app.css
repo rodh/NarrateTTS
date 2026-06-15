@@ -1,0 +1,127 @@
+:root {
+  --accent: #f1582c;
+  --accent-press: #d8451c;
+  --accent-text: #ffffff;
+  --bg: #faf9f7;
+  --surface: #ffffff;
+  --surface-2: #f3f1ee;
+  --bg-input: #f3f1ee;
+  --bg-button: #ece9e4;
+  --bg-button-hover: #e0dcd5;
+  --border: #ececec;
+  --border-subtle: rgba(0,0,0,0.06);
+  --border-input: #dcd8d2;
+  --border-strong: #cfcabf;
+  --border-focus: #b8b2a8;
+  --text: #1a1a1a;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+  --text-accent: #1a1a1a;
+  --scrollbar: #d8d4cd;
+  --hover-bg: #f3f1ee;
+  /* Aliases for markup that still references the old names. Defined via the
+     themed tokens so they adapt to dark automatically. */
+  --bg-panel: var(--surface);
+  --bg-raised: var(--surface-2);
+  --accent-bg: var(--accent);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #ff6a3d;
+    --accent-press: #f1582c;
+    --accent-text: #1a1a1a;
+    --bg: #0f0f10;
+    --surface: #1a1a1c;
+    --surface-2: #242427;
+    --bg-input: #1f1f22;
+    --bg-button: #2a2a2e;
+    --bg-button-hover: #36363b;
+    --border: #2a2a2e;
+    --border-subtle: rgba(255,255,255,0.07);
+    --border-input: #3a3a40;
+    --border-strong: #44444b;
+    --border-focus: #57575e;
+    --text: #ececec;
+    --text-secondary: #9ca3af;
+    --text-muted: #8b8b93;
+    --text-faint: #5c5c63;
+    --text-accent: #ffffff;
+    --scrollbar: #3a3a40;
+    --hover-bg: #1f1f22;
+    --shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+}
+html { height: 100%; }
+body { background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 3px; }
+
+/* Component polish (used by current markup + future screens) */
+.item-card { transition: background 0.15s; border-radius: var(--radius-sm); }
+.item-card:hover { background: var(--hover-bg); }
+
+/* Accent button: any element with .btn-accent */
+.btn-accent { background: var(--accent); color: var(--accent-text); border-radius: 999px; }
+.btn-accent:hover { background: var(--accent-press); }
+
+/* Rounded surfaces */
+.surface { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.pill { border-radius: 999px; }
+
+/* Bottom nav */
+.bottom-nav { display:flex; justify-content:space-around; align-items:center; gap:4px;
+  border-top:1px solid var(--border); background:var(--surface);
+  padding:8px 8px calc(8px + env(safe-area-inset-bottom)); }
+.nav-item { display:flex; flex-direction:column; align-items:center; gap:2px; flex:1;
+  font-size:10px; color:var(--text-faint); background:none; border:0; cursor:pointer; }
+.nav-item svg { width:22px; height:22px; }
+.nav-item.nav-active { color:var(--accent); }
+.nav-center { width:46px; height:46px; border-radius:50%; background:var(--accent);
+  color:var(--accent-text); display:flex; align-items:center; justify-content:center;
+  margin-top:-18px; flex:0 0 auto; box-shadow:var(--shadow); }
+.nav-center svg { width:24px; height:24px; }
+
+/* Home */
+.section-label { font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--text-faint); font-weight:700; margin:18px 4px 8px; }
+.hero { border-radius:var(--radius); padding:16px; color:#fff; min-height:96px;
+  display:flex; flex-direction:column; justify-content:space-between; cursor:pointer; }
+.hero-prog { height:4px; background:rgba(255,255,255,.35); border-radius:2px; margin-top:10px; }
+.hero-prog > i { display:block; height:100%; background:#fff; border-radius:2px; }
+.feed-row { display:flex; gap:12px; overflow-x:auto; padding:2px 4px 4px; }
+.feed-tile { width:104px; flex:0 0 auto; cursor:pointer; }
+.feed-tile .art { height:104px; border-radius:14px; }
+.feed-tile p { margin:6px 2px 0; font-size:12px; font-weight:600; line-height:1.2; }
+
+/* Now-Playing overlay */
+.np-overlay { position:fixed; inset:0; z-index:60; background:var(--bg);
+  display:flex; flex-direction:column; padding:14px 20px calc(20px + env(safe-area-inset-bottom));
+  transform:translateY(100%); transition:transform .25s ease; }
+.np-overlay.open { transform:translateY(0); }
+.np-top { display:flex; justify-content:space-between; align-items:center; color:var(--text-muted); font-size:13px; }
+.np-icon-btn { background:none; border:0; color:var(--text-secondary); cursor:pointer; padding:6px; }
+.np-art { width:100%; aspect-ratio:1; max-height:46vh; border-radius:24px; margin:14px auto 0;
+  background-size:cover; background-position:center; }
+.np-wave { display:flex; align-items:center; gap:2px; height:48px; margin:22px 0 6px; cursor:pointer; }
+.np-wave i { flex:1; min-width:2px; border-radius:2px; background:var(--border-strong, #ccc); }
+.np-wave i.on { background:var(--accent); }
+.np-times { display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); }
+.np-title { font-size:20px; font-weight:800; text-align:center; line-height:1.25; margin:18px 12px 4px; }
+.np-source { text-align:center; font-size:13px; color:var(--text-muted); margin-bottom:20px; }
+.np-ctrls { display:flex; align-items:center; justify-content:space-between; margin-top:auto; }
+.np-ctrls .ic { background:none; border:0; color:var(--text-secondary); font-size:14px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:2px; }
+.np-ctrls .ic svg { width:26px; height:26px; }
+.np-bigplay { width:64px; height:64px; border-radius:50%; background:var(--accent); color:var(--accent-text);
+  display:flex; align-items:center; justify-content:center; border:0; cursor:pointer; }
+.np-bigplay svg { width:28px; height:28px; }
+/* Make the mini-player title area look tappable */
+#player-title { cursor:pointer; }
+.np-queue { margin-top:16px; max-height:30vh; overflow-y:auto; border-top:1px solid var(--border); padding-top:10px; }
+.np-queue .qrow { display:flex; align-items:center; gap:10px; padding:7px 0; }
+.np-queue .qrow .qt { font-size:13px; font-weight:600; }
+.np-queue .qrow .qm { font-size:11px; color:var(--text-muted); }

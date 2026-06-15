@@ -78,16 +78,21 @@ def init_db():
         conn.commit()
     except Exception:
         pass
+    try:
+        conn.execute("ALTER TABLE items ADD COLUMN image_url TEXT")
+        conn.commit()
+    except Exception:
+        pass
     conn.close()
 
 
-def add_item(source_url: str | None, title: str, text: str, status: str = "queued") -> int:
+def add_item(source_url: str | None, title: str, text: str, status: str = "queued", image_url: str | None = None) -> int:
     word_count = len(text.split())
     conn = get_connection()
     cursor = conn.execute(
-        """INSERT INTO items (source_url, title, text, word_count, status)
-           VALUES (?, ?, ?, ?, ?)""",
-        (source_url, title, text, word_count, status),
+        """INSERT INTO items (source_url, title, text, word_count, status, image_url)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (source_url, title, text, word_count, status, image_url),
     )
     item_id = cursor.lastrowid
     conn.commit()

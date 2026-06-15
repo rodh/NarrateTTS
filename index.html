@@ -6,81 +6,18 @@
     <link rel="icon" href="/static/favicon.ico" sizes="any">
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/app.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <style>
-        :root {
-            --bg: #ffffff;
-            --bg-raised: #f3f4f6;
-            --bg-input: #f3f4f6;
-            --bg-panel: #f9fafb;
-            --bg-button: #e5e7eb;
-            --bg-button-hover: #d1d5db;
-            --border: #e5e7eb;
-            --border-subtle: rgba(229, 231, 235, 0.5);
-            --border-input: #d1d5db;
-            --border-focus: #9ca3af;
-            --text: #111827;
-            --text-secondary: #4b5563;
-            --text-muted: #6b7280;
-            --text-faint: #9ca3af;
-            --text-accent: #111827;
-            --accent-bg: #111827;
-            --accent-text: #ffffff;
-            --scrollbar: #d1d5db;
-            --hover-bg: #f3f4f6;
-        }
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #0f0f0f;
-                --bg-raised: #1a1a1a;
-                --bg-input: #111827;
-                --bg-panel: #030712;
-                --bg-button: #1f2937;
-                --bg-button-hover: #374151;
-                --border: #1f2937;
-                --border-subtle: rgba(31, 41, 55, 0.5);
-                --border-input: #374151;
-                --border-focus: #6b7280;
-                --text: #e5e5e5;
-                --text-secondary: #9ca3af;
-                --text-muted: #6b7280;
-                --text-faint: #4b5563;
-                --text-accent: #ffffff;
-                --accent-bg: #ffffff;
-                --accent-text: #000000;
-                --scrollbar: #333333;
-                --hover-bg: #1a1a1a;
-            }
-        }
-        html { height: 100%; }
-        body { background: var(--bg); color: var(--text); }
-        .item-card { transition: background 0.15s; }
-        .item-card:hover { background: var(--hover-bg); }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 3px; }
-    </style>
 </head>
 <body class="flex flex-col overflow-hidden" style="height:100dvh">
 
     <!-- Header -->
-    <header class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-[var(--border)] relative">
-        <div class="flex items-center gap-2">
-            <img src="/static/apple-touch-icon.png" alt="" class="w-7 h-7 rounded">
-            <h1 class="text-lg font-semibold tracking-tight">NarrateTTS</h1>
-        </div>
-        <div class="flex items-center gap-2">
-            <input id="search" type="text" placeholder="Search..." class="bg-[var(--bg-input)] border border-[var(--border-input)] rounded-lg px-3 py-1.5 text-sm w-36 sm:w-48 focus:outline-none focus:border-[var(--border-focus)]" oninput="render()">
-            <button onclick="toggleSettingsPanel()" id="settings-btn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--bg-button)] hover:bg-[var(--bg-button-hover)] text-[var(--text-secondary)] hover:text-[var(--text-accent)] transition" title="Settings">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            </button>
-            <button onclick="toggleAddPanel()" id="add-btn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--bg-button)] hover:bg-[var(--bg-button-hover)] text-[var(--text-secondary)] hover:text-[var(--text-accent)] transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
-            </button>
-        </div>
+    <header class="flex items-center gap-2 px-4 sm:px-6 py-3 border-b border-[var(--border)]">
+        <img src="/static/apple-touch-icon.png" alt="" class="w-7 h-7 rounded">
+        <h1 class="text-lg font-semibold tracking-tight">NarrateTTS</h1>
     </header>
 
-    <!-- Add Panel (dropdown) -->
+    <!-- Add Panel (overlay dropdown, toggled by nav ＋) -->
     <div id="add-panel" class="hidden border-b border-[var(--border)] bg-[var(--bg-panel)] px-4 sm:px-6 py-4 overflow-hidden">
         <div class="flex flex-col gap-2 max-w-full">
             <textarea id="url-input" rows="1" placeholder="Paste a URL or text..." class="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded-lg px-4 py-2.5 text-base focus:outline-none focus:border-[var(--border-focus)] min-w-0 resize-none overflow-hidden leading-normal" oninput="autoResize(this)" onpaste="setTimeout(() => autoResize(this), 0)" onkeydown="handleInputKey(event)"></textarea>
@@ -88,74 +25,72 @@
                 <select id="voice-select" class="min-w-0 flex-1 bg-[var(--bg-input)] border border-[var(--border-input)] rounded-lg px-3 py-2.5 text-base focus:outline-none focus:border-[var(--border-focus)]">
                     <option value="af_heart" selected>Heart (F)</option>
                 </select>
-                <button id="convert-btn" onclick="convert()" class="bg-[var(--bg-button-hover)] hover:bg-[var(--bg-button)] text-[var(--text-accent)] px-5 py-2.5 rounded-lg text-sm font-medium transition shrink-0">Convert</button>
+                <button id="convert-btn" onclick="convert()" class="btn-accent px-5 py-2.5 rounded-lg text-sm font-medium transition shrink-0">Convert</button>
             </div>
         </div>
     </div>
 
-    <!-- Settings Panel (dropdown) -->
-    <div id="settings-panel" class="hidden border-b border-[var(--border)] bg-[var(--bg-panel)] px-4 sm:px-6 py-4 overflow-hidden">
-        <div class="max-w-md">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <p class="text-sm font-semibold">iOS Shortcut</p>
-                    <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)] mt-0.5">Send to NarrateTTS from the share sheet</p>
-                    <p class="text-sm text-[var(--text-secondary)] mt-2">Open this page in Safari on your iPhone, tap <span class="text-[var(--text-accent)] font-medium">Add to iPhone</span>, then share any link to <span class="text-[var(--text-accent)] font-medium">Send to NarrateTTS</span> — it captures with your token baked in.</p>
-                </div>
-                <a href="/api/shortcut" download="SendToNarrate.shortcut" class="shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[var(--accent-bg)] text-[var(--accent-text)] font-medium text-sm hover:opacity-80 transition no-underline">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path stroke-linecap="round" d="M11 18h2"/></svg>
-                    Add to iPhone
-                </a>
-            </div>
-            <div class="mt-3 rounded-lg border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2">
-                <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)]">Endpoint</p>
-                <p id="settings-endpoint" class="font-mono text-xs text-[var(--text-secondary)] truncate">…</p>
-            </div>
-            <div class="mt-2 flex items-center justify-between gap-2 rounded-lg border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2">
-                <div class="min-w-0">
-                    <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)]">Token</p>
-                    <p id="settings-token" class="font-mono text-xs text-[var(--text-secondary)] truncate">…</p>
-                </div>
-                <div class="flex items-center gap-1 shrink-0">
-                    <button onclick="toggleTokenReveal()" id="token-reveal-btn" class="p-1.5 rounded-md text-[var(--text-faint)] hover:text-[var(--text-accent)] transition" title="Show token">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    </button>
-                    <button onclick="copyToken()" id="token-copy-btn" class="p-1.5 rounded-md text-[var(--text-faint)] hover:text-[var(--text-accent)] transition" title="Copy token">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                    </button>
-                </div>
-            </div>
-            <button onclick="regenerateToken()" class="mt-2 inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[var(--text-faint)] hover:text-[var(--text-secondary)] transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.49 9A9 9 0 105.64 5.64L4 4m16 16l-1.64-1.64A9 9 0 0020.49 9"/></svg>
-                Regenerate token
-            </button>
-        </div>
-    </div>
+    <main class="flex-1 overflow-y-auto" id="screen-host">
+        <section id="screen-home" class="px-4 sm:px-6 py-4 hidden"></section>
 
-    <!-- Tab Bar -->
-    <nav class="flex border-b border-[var(--border)] px-4 sm:px-6">
-        <button onclick="switchTab('library')" id="tab-library" class="px-4 py-2 text-sm font-medium border-b-2 border-[var(--text-accent)] text-[var(--text-accent)]">Library</button>
-        <button onclick="switchTab('playlists')" id="tab-playlists" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]">Playlists</button>
-    </nav>
+        <section id="screen-feeds" class="px-4 sm:px-6 py-4 hidden">
+            <div id="playlists-view"><!-- Playlists rendered here --></div>
+        </section>
 
-    <!-- Main Content: Library -->
-    <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-4" id="library">
-        <!-- Items rendered here -->
+        <section id="screen-library" class="px-4 sm:px-6 py-4 hidden">
+            <input id="search" type="text" placeholder="Search..." class="w-full mb-3 bg-[var(--bg-input)] border border-[var(--border-input)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--border-focus)]" oninput="render()">
+            <div id="library"><!-- Items rendered here --></div>
+        </section>
+
+        <section id="screen-settings" class="px-4 sm:px-6 py-4 hidden">
+            <div class="max-w-md">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-sm font-semibold">iOS Shortcut</p>
+                        <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)] mt-0.5">Send to NarrateTTS from the share sheet</p>
+                        <p class="text-sm text-[var(--text-secondary)] mt-2">Open this page in Safari on your iPhone, tap <span class="text-[var(--text-accent)] font-medium">Add to iPhone</span>, then share any link to <span class="text-[var(--text-accent)] font-medium">Send to NarrateTTS</span> — it captures with your token baked in.</p>
+                    </div>
+                    <a href="/api/shortcut" download="SendToNarrate.shortcut" class="btn-accent shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg font-medium text-sm hover:opacity-80 transition no-underline">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path stroke-linecap="round" d="M11 18h2"/></svg>
+                        Add to iPhone
+                    </a>
+                </div>
+                <div class="mt-3 rounded-lg border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2">
+                    <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)]">Endpoint</p>
+                    <p id="settings-endpoint" class="font-mono text-xs text-[var(--text-secondary)] truncate">…</p>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-2 rounded-lg border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2">
+                    <div class="min-w-0">
+                        <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)]">Token</p>
+                        <p id="settings-token" class="font-mono text-xs text-[var(--text-secondary)] truncate">…</p>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="toggleTokenReveal()" id="token-reveal-btn" class="p-1.5 rounded-md text-[var(--text-faint)] hover:text-[var(--text-accent)] transition" title="Show token">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </button>
+                        <button onclick="copyToken()" id="token-copy-btn" class="p-1.5 rounded-md text-[var(--text-faint)] hover:text-[var(--text-accent)] transition" title="Copy token">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <button onclick="regenerateToken()" class="mt-2 inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[var(--text-faint)] hover:text-[var(--text-secondary)] transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.49 9A9 9 0 105.64 5.64L4 4m16 16l-1.64-1.64A9 9 0 0020.49 9"/></svg>
+                    Regenerate token
+                </button>
+            </div>
+        </section>
+
+        <section id="screen-feed-detail" class="px-4 sm:px-6 py-4 hidden"></section>
     </main>
 
-    <!-- Main Content: Playlists -->
-    <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 hidden" id="playlists-view">
-        <!-- Playlists rendered here -->
-    </main>
-
-    <!-- Playback Bar -->
-    <div id="player" class="hidden border-t border-[var(--border)] px-4 sm:px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+    <!-- Mini-player (sits above the nav) -->
+    <div id="player" class="hidden border-t border-[var(--border)] px-4 sm:px-6 py-2">
         <div class="flex items-center gap-3 sm:gap-4">
             <div class="flex items-center gap-1">
                 <button onclick="skipBack()" class="w-8 h-8 flex items-center justify-center rounded-full text-[var(--text-faint)] hover:text-[var(--text-accent)] transition flex-shrink-0" title="Back 30s">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z"/></svg>
                 </button>
-                <button id="play-btn" onclick="togglePlay()" class="w-10 h-10 flex items-center justify-center rounded-full bg-[var(--accent-bg)] text-[var(--accent-text)] hover:opacity-80 transition flex-shrink-0">
+                <button id="play-btn" onclick="togglePlay()" class="btn-accent w-10 h-10 flex items-center justify-center rounded-full hover:opacity-80 transition flex-shrink-0">
                     <svg id="play-icon" class="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
                     <svg id="pause-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
                 </button>
@@ -164,7 +99,7 @@
                 </button>
             </div>
             <div class="flex-1 min-w-0">
-                <p id="player-title" class="text-sm font-medium truncate"></p>
+                <p id="player-title" class="text-sm font-medium truncate" onclick="openNowPlaying()"></p>
                 <div class="flex items-center gap-2 mt-1">
                     <span id="player-time" class="text-xs text-[var(--text-muted)] flex-shrink-0">0:00</span>
                     <input id="player-progress" type="range" min="0" max="100" value="0" class="flex-1 h-1 bg-[var(--bg-button)] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--accent-bg)]" oninput="seekTo(this.value)">
@@ -175,790 +110,45 @@
         </div>
     </div>
 
-    <script>
-        let audio = null;
-        let currentItemId = null;
-        let items = [];
-        let playlistMap = {};
-        let highWaterMark = 0;
-        let saveTimeout = null;
-
-        // --- Rendering ---
-
-        async function loadItems() {
-            try {
-                const [itemsRes, mapRes] = await Promise.all([
-                    fetch('/api/items?limit=100'),
-                    fetch('/api/items/playlist-map'),
-                ]);
-                items = await itemsRes.json();
-                playlistMap = await mapRes.json();
-            } catch (e) {
-                console.error('Failed to load items:', e);
-                return;
-            }
-            render();
-        }
-
-        function render() {
-            const query = document.getElementById('search').value.toLowerCase();
-            const filtered = items.filter(item =>
-                item.title.toLowerCase().includes(query) ||
-                (item.source_url && item.source_url.toLowerCase().includes(query))
-            );
-
-            const library = document.getElementById('library');
-            if (filtered.length === 0) {
-                library.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-64 text-[var(--text-muted)]">
-                        <p class="text-lg mb-1">Nothing here yet</p>
-                        <p class="text-sm">Tap + to add a URL or paste text</p>
-                    </div>`;
-                return;
-            }
-
-            library.innerHTML = filtered.map(item => {
-                const date = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const pct = (item.duration_seconds > 0) ? ((item.play_position || 0) / item.duration_seconds) : 0;
-                const isFinished = pct >= 0.8 || !!item.consumed_at;
-                const isPlaying = currentItemId === item.id && audio && !audio.paused;
-
-                let sourceHtml = '';
-                if (item.source_url) {
-                    try {
-                        const hostname = new URL(item.source_url).hostname.replace('www.', '');
-                        sourceHtml = `<a href="${escapeHtml(item.source_url)}" target="_blank" class="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] truncate max-w-[200px]" onclick="event.stopPropagation()" title="${escapeHtml(item.source_url)}">${hostname}</a>`;
-                    } catch(e) {
-                        sourceHtml = `<span class="text-xs text-[var(--text-muted)]">Link</span>`;
-                    }
-                } else {
-                    sourceHtml = `<span class="text-xs text-[var(--text-muted)]">Text</span>`;
-                }
-
-                // Icon for right side
-                let iconHtml = '';
-                if (item.status === 'completed' && item.audio_path) {
-                    if (isPlaying) {
-                        iconHtml = `<span class="text-[var(--text-faint)]"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg></span>`;
-                    } else {
-                        const playColor = isFinished ? 'text-[var(--text-faint)]' : 'text-[var(--text-secondary)]';
-                        iconHtml = `<span class="${playColor}"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></span>`;
-                    }
-                } else if (item.status === 'processing') {
-                    iconHtml = `<span class="text-blue-400 text-sm animate-pulse">Converting...</span>`;
-                } else if (item.status === 'error') {
-                    iconHtml = `<span class="text-red-400 text-xs truncate max-w-[200px]" title="${escapeHtml(item.error || '')}">${escapeHtml(item.error || 'Error')}</span>`;
-                }
-
-                // Progress indicator (left side)
-                let progressCircle = '';
-                if (item.status === 'completed') {
-                    if (isFinished) {
-                        // Finished: dim gray filled dot
-                        progressCircle = `<svg class="w-3 h-3 flex-shrink-0 mt-[3px]" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" style="fill: var(--text-faint)"/></svg>`;
-                    } else if (pct > 0) {
-                        // In progress: gray ring with blue arc
-                        const circumference = 2 * Math.PI * 6;
-                        const offset = circumference * (1 - Math.min(pct / 0.8, 1));
-                        progressCircle = `<svg class="w-3 h-3 flex-shrink-0 mt-[3px]" viewBox="0 0 16 16">` +
-                            `<circle cx="8" cy="8" r="6" fill="none" stroke-width="2.5" style="stroke: var(--border-input)"/>` +
-                            `<circle cx="8" cy="8" r="6" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" transform="rotate(-90 8 8)" stroke-linecap="round"/>` +
-                            `</svg>`;
-                    } else {
-                        // New/unlistened: bright blue dot
-                        progressCircle = `<svg class="w-3 h-3 flex-shrink-0 mt-[3px]" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="#3b82f6"/></svg>`;
-                    }
-                } else if (item.status === 'processing') {
-                    // Converting: pulsing blue dot
-                    progressCircle = `<svg class="w-3 h-3 flex-shrink-0 mt-[3px] animate-pulse" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="#3b82f6"/></svg>`;
-                } else if (item.status === 'error') {
-                    // Error: red dot
-                    progressCircle = `<svg class="w-3 h-3 flex-shrink-0 mt-[3px]" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="#ef4444"/></svg>`;
-                } else {
-                    // Queued: invisible spacer for alignment
-                    progressCircle = `<svg class="w-3 h-3 flex-shrink-0 mt-[3px]" viewBox="0 0 16 16"></svg>`;
-                }
-
-                // Row click action
-                const audioFile = item.audio_path ? item.audio_path.split('/').pop() : '';
-                const rowClick = (item.status === 'completed' && item.audio_path)
-                    ? `onclick="playItem(${item.id}, '${audioFile}')"`
-                    : '';
-
-                const itemPlaylists = playlistMap[item.id] || [];
-                const tagsHtml = itemPlaylists.map(p =>
-                    `<span class="inline-block text-[11px] leading-tight px-1.5 py-0.5 rounded bg-[var(--bg-button)] text-[var(--text-muted)]">${escapeHtml(p.name)}</span>`
-                ).join('');
-
-                return `
-                    <div class="item-card flex items-start py-3 border-b border-[var(--border-subtle)] cursor-pointer gap-2" ${rowClick}>
-                        ${progressCircle}
-                        <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium truncate">${escapeHtml(item.title)}</p>
-                                <div class="flex items-center gap-2 mt-0.5">
-                                    ${sourceHtml}
-                                    <span class="text-xs text-[var(--text-faint)]">&middot;</span>
-                                    <span class="text-xs text-[var(--text-muted)]">${date}</span>
-                                    <span class="text-xs text-[var(--text-faint)]">&middot;</span>
-                                    <span class="text-xs text-[var(--text-muted)]">${item.word_count || 0} words</span>
-                                </div>
-                                ${tagsHtml ? `<div class="flex flex-wrap gap-1 mt-1">${tagsHtml}</div>` : ''}
-                            </div>
-                            <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                                ${iconHtml}
-                                ${item.status === 'completed' ? `<button onclick="showPlaylistPicker(${item.id}, event)" class="text-[var(--text-faint)] hover:text-[var(--text-secondary)] transition" title="Add to playlist">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                </button>` : ''}
-                                ${item.status === 'error' ? `<button onclick="event.stopPropagation(); retryItem(${item.id})" class="text-[var(--text-faint)] hover:text-[var(--text-accent)] transition" title="Retry">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.49 9A9 9 0 105.64 5.64L4 4m16 16l-1.64-1.64A9 9 0 0020.49 9"/></svg>
-                                </button>` : ''}
-                                ${(item.play_position || 0) > 0 ? `<button onclick="event.stopPropagation(); resetProgress(${item.id})" class="text-[var(--text-faint)] hover:text-[var(--text-secondary)] transition" title="Reset progress">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.49 9A9 9 0 105.64 5.64L4 4m16 16l-1.64-1.64A9 9 0 0020.49 9"/></svg>
-                                </button>` : ''}
-                                <button onclick="event.stopPropagation(); deleteItem(${item.id})" class="text-[var(--text-faint)] hover:text-red-400 transition" title="Delete">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                </button>
-                            </div>
-                        </div>
-                    </div>`;
-            }).join('');
-        }
-
-        // --- Add Panel ---
-
-        function toggleAddPanel() {
-            const panel = document.getElementById('add-panel');
-            const isHidden = panel.classList.toggle('hidden');
-            if (!isHidden) {
-                document.getElementById('url-input').focus();
-            }
-        }
-
-        // --- Conversion ---
-
-        async function convert() {
-            const input = document.getElementById('url-input');
-            const value = input.value.trim();
-            if (!value) return;
-
-            const btn = document.getElementById('convert-btn');
-            btn.disabled = true;
-            btn.textContent = 'Converting...';
-
-            const voice = document.getElementById('voice-select').value;
-            const isUrl = /^https?:\/\//i.test(value);
-            const body = isUrl ? { url: value, voice } : { text: value, voice };
-
-            try {
-                await fetch('/api/convert', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-                input.value = '';
-                input.rows = 1;
-                input.style.height = '';
-                document.getElementById('add-panel').classList.add('hidden');
-                pollUpdates();
-            } catch (e) {
-                alert('Conversion failed: ' + e.message);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Convert';
-            }
-        }
-
-        // --- Playback ---
-
-        function playItem(id, audioFile) {
-            if (currentItemId === id && audio) {
-                togglePlay();
-                return;
-            }
-
-            // Save progress from previous item
-            if (currentItemId && highWaterMark > 0) {
-                saveProgress();
-            }
-
-            currentItemId = id;
-            if (audio) { audio.pause(); audio = null; }
-            audio = new Audio(`/audio/${audioFile}`);
-            const speed = getStoredSpeed();
-            audio.playbackRate = speed;
-
-            const item = items.find(i => i.id === id);
-            highWaterMark = item?.play_position || 0;
-
-            audio.addEventListener('timeupdate', updatePlayerUI);
-            audio.addEventListener('ended', () => {
-                highWaterMark = audio.duration;
-                saveProgress();
-                document.getElementById('play-icon').classList.remove('hidden');
-                document.getElementById('pause-icon').classList.add('hidden');
-                renderPreservingScroll();
-            });
-
-            // Resume from saved position
-            if (highWaterMark > 0) {
-                audio.addEventListener('canplay', function seekOnce() {
-                    if (audio.currentTime < highWaterMark) {
-                        audio.currentTime = highWaterMark;
-                    }
-                    audio.removeEventListener('canplay', seekOnce);
-                });
-            }
-
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.metadata = new MediaMetadata({
-                    title: item ? item.title : '',
-                    artist: 'NarrateTTS'
-                });
-                navigator.mediaSession.setActionHandler('play', () => togglePlay());
-                navigator.mediaSession.setActionHandler('pause', () => togglePlay());
-                navigator.mediaSession.setActionHandler('seekbackward', () => skipBack());
-                navigator.mediaSession.setActionHandler('seekforward', () => skipForward());
-            }
-
-            audio.play();
-            document.getElementById('player').classList.remove('hidden');
-            document.getElementById('player-title').textContent = item ? item.title : '';
-            document.getElementById('play-icon').classList.add('hidden');
-            document.getElementById('pause-icon').classList.remove('hidden');
-            renderPreservingScroll();
-        }
-
-        function togglePlay() {
-            if (!audio) return;
-            if (audio.paused) {
-                audio.play();
-                document.getElementById('play-icon').classList.add('hidden');
-                document.getElementById('pause-icon').classList.remove('hidden');
-            } else {
-                audio.pause();
-                saveProgress();
-                document.getElementById('play-icon').classList.remove('hidden');
-                document.getElementById('pause-icon').classList.add('hidden');
-            }
-            renderPreservingScroll();
-        }
-
-        function seekTo(value) {
-            if (!audio) return;
-            audio.currentTime = (value / 100) * audio.duration;
-        }
-
-        function skipBack() {
-            if (!audio) return;
-            audio.currentTime = Math.max(0, audio.currentTime - 30);
-        }
-
-        function skipForward() {
-            if (!audio) return;
-            const newTime = audio.currentTime + 30;
-            if (newTime >= audio.duration) {
-                audio.currentTime = audio.duration;
-            } else {
-                audio.currentTime = newTime;
-            }
-        }
-
-        const SPEED_OPTIONS = [1, 1.25, 1.5, 2, 0.75];
-
-        function getStoredSpeed() {
-            const stored = localStorage.getItem('narrateTTS_playbackSpeed');
-            const val = parseFloat(stored);
-            return (val && SPEED_OPTIONS.includes(val)) ? val : 1;
-        }
-
-        function cycleSpeed() {
-            const current = getStoredSpeed();
-            const idx = SPEED_OPTIONS.indexOf(current);
-            const next = SPEED_OPTIONS[(idx + 1) % SPEED_OPTIONS.length];
-            localStorage.setItem('narrateTTS_playbackSpeed', next);
-            if (audio) audio.playbackRate = next;
-            document.getElementById('speed-btn').textContent = next === 1 ? '1x' : next + 'x';
-        }
-
-        function updatePlayerUI() {
-            if (!audio || !audio.duration) return;
-            const pct = (audio.currentTime / audio.duration) * 100;
-            document.getElementById('player-progress').value = pct;
-            document.getElementById('player-time').textContent = formatTime(audio.currentTime);
-            document.getElementById('player-duration').textContent = formatTime(audio.duration);
-
-            if (audio.currentTime > highWaterMark) {
-                highWaterMark = audio.currentTime;
-                debouncedSaveProgress();
-            }
-        }
-
-        async function retryItem(id) {
-            try {
-                await fetch(`/api/items/${id}/retry`, { method: 'POST' });
-                pollUpdates();
-            } catch (e) {
-                console.error('Retry failed:', e);
-            }
-        }
-
-        async function resetProgress(id) {
-            try {
-                await fetch(`/api/items/${id}/progress`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ position: 0 })
-                });
-                const item = items.find(i => i.id === id);
-                if (item) item.play_position = 0;
-                if (currentItemId === id) {
-                    highWaterMark = 0;
-                    if (audio) audio.currentTime = 0;
-                }
-                renderPreservingScroll();
-            } catch (e) {
-                console.error('Reset progress failed:', e);
-            }
-        }
-
-        async function deleteItem(id) {
-            if (!confirm('Delete this item and its audio?')) return;
-            try {
-                await fetch(`/api/items/${id}`, { method: 'DELETE' });
-                if (currentItemId === id) {
-                    if (audio) { audio.pause(); audio = null; }
-                    currentItemId = null;
-                    document.getElementById('player').classList.add('hidden');
-                }
-                loadItems();
-            } catch (e) {
-                console.error('Delete failed:', e);
-            }
-        }
-
-        function saveProgress() {
-            if (!currentItemId || highWaterMark <= 0) return;
-            const item = items.find(i => i.id === currentItemId);
-            if (item && highWaterMark > (item.play_position || 0)) {
-                item.play_position = highWaterMark;
-            }
-            fetch(`/api/items/${currentItemId}/progress`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ position: highWaterMark })
-            }).catch(e => console.error('Save progress failed:', e));
-        }
-
-        function debouncedSaveProgress() {
-            if (saveTimeout) clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(saveProgress, 5000);
-        }
-
-        function renderPreservingScroll() {
-            const library = document.getElementById('library');
-            const scrollTop = library.scrollTop;
-            render();
-            library.scrollTop = scrollTop;
-        }
-
-        // --- Utilities ---
-
-        function autoResize(el) {
-            el.style.height = '';
-            el.style.height = Math.min(el.scrollHeight, 200) + 'px';
-        }
-
-        function handleInputKey(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                const value = event.target.value.trim();
-                const isUrl = /^https?:\/\//i.test(value);
-                if (isUrl || value.split('\n').length <= 1) {
-                    event.preventDefault();
-                    convert();
-                }
-            }
-        }
-
-        function formatTime(s) {
-            if (!s || isNaN(s)) return '0:00';
-            const m = Math.floor(s / 60);
-            const sec = Math.floor(s % 60);
-            return `${m}:${sec.toString().padStart(2, '0')}`;
-        }
-
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
-
-        // --- Polling ---
-
-        function pollUpdates() {
-            loadItems().then(() => {
-                // If there are processing items, keep polling
-                if (!Array.isArray(items)) return;
-                const hasProcessing = items.some(i => i.status === 'processing' || i.status === 'queued');
-                if (hasProcessing) {
-                    setTimeout(pollUpdates, 3000);
-                }
-            }).catch(e => {
-                console.error('Polling error:', e);
-                setTimeout(pollUpdates, 5000);
-            });
-        }
-
-        // --- Voices ---
-
-        const COMMON_VOICES = [
-            { id: "af_heart", name: "Heart (F)" },
-            { id: "af_bella", name: "Bella (F)" },
-            { id: "af_nicole", name: "Nicole (F)" },
-            { id: "af_sarah", name: "Sarah (F)" },
-            { id: "af_sky", name: "Sky (F)" },
-            { id: "am_adam", name: "Adam (M)" },
-            { id: "am_michael", name: "Michael (M)" },
-            { id: "bf_emma", name: "Emma (F, UK)" },
-            { id: "bf_isabella", name: "Isabella (F, UK)" },
-            { id: "bm_george", name: "George (M, UK)" },
-            { id: "bm_lewis", name: "Lewis (M, UK)" },
-        ];
-
-        async function loadVoices() {
-            const select = document.getElementById('voice-select');
-            function populateVoices(voices) {
-                select.innerHTML = '';
-                for (const v of voices) {
-                    const opt = document.createElement('option');
-                    opt.value = v.id;
-                    opt.textContent = v.name;
-                    select.appendChild(opt);
-                }
-            }
-            try {
-                const res = await fetch('/api/voices');
-                const data = await res.json();
-                const voices = data.voices || [];
-                populateVoices(voices.length > 0 ? voices : COMMON_VOICES);
-            } catch (e) {
-                populateVoices(COMMON_VOICES);
-            }
-        }
-
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) saveProgress();
-        });
-        window.addEventListener('beforeunload', saveProgress);
-
-        // --- Tabs ---
-
-        let currentTab = 'library';
-
-        function switchTab(tab) {
-            currentTab = tab;
-            document.getElementById('library').classList.toggle('hidden', tab !== 'library');
-            document.getElementById('playlists-view').classList.toggle('hidden', tab !== 'playlists');
-            document.getElementById('tab-library').classList.toggle('border-[var(--text-accent)]', tab === 'library');
-            document.getElementById('tab-library').classList.toggle('text-[var(--text-accent)]', tab === 'library');
-            document.getElementById('tab-library').classList.toggle('border-transparent', tab !== 'library');
-            document.getElementById('tab-library').classList.toggle('text-[var(--text-muted)]', tab !== 'library');
-            document.getElementById('tab-playlists').classList.toggle('border-[var(--text-accent)]', tab === 'playlists');
-            document.getElementById('tab-playlists').classList.toggle('text-[var(--text-accent)]', tab === 'playlists');
-            document.getElementById('tab-playlists').classList.toggle('border-transparent', tab !== 'playlists');
-            document.getElementById('tab-playlists').classList.toggle('text-[var(--text-muted)]', tab !== 'playlists');
-            if (tab === 'playlists') loadPlaylists();
-        }
-
-        // --- Playlists ---
-
-        let playlists = [];
-        let viewingPlaylistId = null;
-
-        async function loadPlaylists() {
-            try {
-                const res = await fetch('/api/playlists');
-                playlists = await res.json();
-            } catch (e) {
-                console.error('Failed to load playlists:', e);
-                return;
-            }
-            renderPlaylists();
-        }
-
-        function renderPlaylists() {
-            const view = document.getElementById('playlists-view');
-            const feedBase = location.origin;
-
-            let html = `
-                <div class="mb-4 p-3 bg-[var(--bg-input)] rounded-lg">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium">All Items Feed</p>
-                            <p class="text-xs text-[var(--text-muted)] mt-0.5 truncate">${feedBase}/feed</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="copyFeedUrl('${feedBase}/feed')" class="text-xs bg-[var(--bg-button)] hover:bg-[var(--bg-button-hover)] px-3 py-1.5 rounded transition">Copy URL</button>
-                            <a href="/feed/opml" download="narratetts.opml" class="text-xs bg-[var(--bg-button)] hover:bg-[var(--bg-button-hover)] px-3 py-1.5 rounded transition inline-block">Export OPML</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="mb-4 flex gap-2">
-                    <input id="new-playlist-name" type="text" placeholder="New playlist name..." class="flex-1 bg-[var(--bg-input)] border border-[var(--border-input)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--border-focus)]" onkeydown="if(event.key==='Enter')createPlaylist()">
-                    <button onclick="createPlaylist()" class="bg-[var(--bg-button-hover)] hover:bg-[var(--bg-button)] text-[var(--text-accent)] px-4 py-2 rounded-lg text-sm transition">Create</button>
-                </div>`;
-
-            if (playlists.length === 0) {
-                html += `<p class="text-[var(--text-muted)] text-sm text-center mt-8">No playlists yet</p>`;
-            } else {
-                html += playlists.map(p => `
-                    <div class="item-card flex items-center justify-between py-3 border-b border-[var(--border-subtle)]">
-                        <div class="flex-1 min-w-0 cursor-pointer" onclick="viewPlaylist(${p.id})">
-                            <p class="text-sm font-medium truncate">${escapeHtml(p.name)}</p>
-                            <p class="text-xs text-[var(--text-muted)] mt-0.5">${p.item_count} item${p.item_count !== 1 ? 's' : ''}</p>
-                        </div>
-                        <div class="flex items-center gap-2 flex-shrink-0">
-                            <button onclick="copyFeedUrl('${feedBase}/feed/playlist/${p.id}')" class="text-xs bg-[var(--bg-button)] hover:bg-[var(--bg-button-hover)] px-2.5 py-1.5 rounded transition" title="Copy feed URL">Feed URL</button>
-                            <button onclick="confirmDeletePlaylist(${p.id})" class="text-[var(--text-faint)] hover:text-red-400 transition" title="Delete">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                            </button>
-                        </div>
-                    </div>`).join('');
-            }
-
-            view.innerHTML = html;
-        }
-
-        async function createPlaylist() {
-            const input = document.getElementById('new-playlist-name');
-            const name = input.value.trim();
-            if (!name) return;
-            try {
-                await fetch('/api/playlists', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name })
-                });
-                input.value = '';
-                loadPlaylists();
-            } catch (e) {
-                console.error('Create playlist failed:', e);
-            }
-        }
-
-        async function confirmDeletePlaylist(id) {
-            if (!confirm('Delete this playlist?')) return;
-            try {
-                await fetch(`/api/playlists/${id}`, { method: 'DELETE' });
-                loadPlaylists();
-            } catch (e) {
-                console.error('Delete playlist failed:', e);
-            }
-        }
-
-        async function viewPlaylist(id) {
-            viewingPlaylistId = id;
-            const playlist = playlists.find(p => p.id === id);
-            try {
-                const res = await fetch(`/api/playlists/${id}/items`);
-                const playlistItems = await res.json();
-                renderPlaylistDetail(playlist, playlistItems);
-            } catch (e) {
-                console.error('Failed to load playlist items:', e);
-            }
-        }
-
-        function renderPlaylistDetail(playlist, playlistItems) {
-            const view = document.getElementById('playlists-view');
-            const feedBase = location.origin;
-            let html = `
-                <div class="mb-4">
-                    <button onclick="loadPlaylists()" class="text-sm text-[var(--text-muted)] hover:text-[var(--text-accent)] transition">&larr; All Playlists</button>
-                </div>
-                <div class="mb-4 p-3 bg-[var(--bg-input)] rounded-lg">
-                    <p class="text-sm font-medium">${escapeHtml(playlist.name)}</p>
-                    <div class="flex items-center justify-between mt-1">
-                        <p class="text-xs text-[var(--text-muted)] truncate">${feedBase}/feed/playlist/${playlist.id}</p>
-                        <button onclick="copyFeedUrl('${feedBase}/feed/playlist/${playlist.id}')" class="text-xs bg-[var(--bg-button)] hover:bg-[var(--bg-button-hover)] px-3 py-1.5 rounded transition ml-2">Copy URL</button>
-                    </div>
-                </div>`;
-
-            if (playlistItems.length === 0) {
-                html += `<p class="text-[var(--text-muted)] text-sm text-center mt-8">No items in this playlist. Add items from the Library tab.</p>`;
-            } else {
-                html += playlistItems.map(item => {
-                    const date = new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    return `
-                    <div class="item-card flex items-center justify-between py-3 border-b border-[var(--border-subtle)]">
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium truncate">${escapeHtml(item.title)}</p>
-                            <span class="text-xs text-[var(--text-muted)]">${date}</span>
-                        </div>
-                        <button onclick="removeFromPlaylist(${playlist.id}, ${item.id})" class="text-[var(--text-faint)] hover:text-red-400 transition flex-shrink-0 ml-2" title="Remove from playlist">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </button>
-                    </div>`;
-                }).join('');
-            }
-
-            view.innerHTML = html;
-        }
-
-        async function removeFromPlaylist(playlistId, itemId) {
-            try {
-                await fetch(`/api/playlists/${playlistId}/items/${itemId}`, { method: 'DELETE' });
-                viewPlaylist(playlistId);
-            } catch (e) {
-                console.error('Remove from playlist failed:', e);
-            }
-        }
-
-        function copyFeedUrl(url) {
-            navigator.clipboard.writeText(url).then(() => {
-                // Brief visual feedback
-                const btn = event.target;
-                const orig = btn.textContent;
-                btn.textContent = 'Copied!';
-                setTimeout(() => { btn.textContent = orig; }, 1500);
-            });
-        }
-
-        // --- Playlist assignment from library ---
-
-        async function showPlaylistPicker(itemId, event) {
-            event.stopPropagation();
-            // Remove any existing picker
-            const existing = document.querySelector('.playlist-picker');
-            if (existing) existing.remove();
-
-            // Load playlists and item's current playlists
-            const [playlistsRes, itemPlaylistsRes] = await Promise.all([
-                fetch('/api/playlists'),
-                fetch(`/api/items/${itemId}/playlists`)
-            ]);
-            const allPlaylists = await playlistsRes.json();
-            const itemPlaylists = await itemPlaylistsRes.json();
-            const itemPlaylistIds = new Set(itemPlaylists.map(p => p.id));
-
-            if (allPlaylists.length === 0) {
-                alert('Create a playlist first in the Playlists tab.');
-                return;
-            }
-
-            const picker = document.createElement('div');
-            picker.className = 'playlist-picker absolute z-50 bg-[var(--bg-input)] border border-[var(--border-input)] rounded-lg shadow-xl p-2 min-w-[180px]';
-            picker.style.top = (event.target.getBoundingClientRect().bottom + 4) + 'px';
-            picker.style.right = '16px';
-            picker.style.position = 'fixed';
-
-            picker.innerHTML = allPlaylists.map(p => {
-                const checked = itemPlaylistIds.has(p.id) ? 'checked' : '';
-                return `<label class="flex items-center gap-2 px-2 py-1.5 hover:bg-[var(--hover-bg)] rounded cursor-pointer text-sm">
-                    <input type="checkbox" ${checked} onchange="togglePlaylistItem(${p.id}, ${itemId}, this.checked)" class="rounded">
-                    <span class="truncate">${escapeHtml(p.name)}</span>
-                </label>`;
-            }).join('');
-
-            document.body.appendChild(picker);
-
-            // Close on outside click
-            setTimeout(() => {
-                document.addEventListener('click', function closePicker(e) {
-                    if (!picker.contains(e.target)) {
-                        picker.remove();
-                        document.removeEventListener('click', closePicker);
-                    }
-                });
-            }, 0);
-        }
-
-        async function togglePlaylistItem(playlistId, itemId, add) {
-            try {
-                if (add) {
-                    await fetch(`/api/playlists/${playlistId}/items`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ item_id: itemId })
-                    });
-                } else {
-                    await fetch(`/api/playlists/${playlistId}/items/${itemId}`, { method: 'DELETE' });
-                }
-            } catch (e) {
-                console.error('Toggle playlist item failed:', e);
-            }
-        }
-
-        // --- Settings / Shortcut token ---
-
-        let shortcutToken = null;
-        let tokenRevealed = false;
-
-        function renderToken() {
-            const el = document.getElementById('settings-token');
-            if (!shortcutToken) { el.textContent = '…'; return; }
-            el.textContent = tokenRevealed
-                ? shortcutToken
-                : shortcutToken.slice(0, 6) + '•'.repeat(18) + shortcutToken.slice(-4);
-        }
-
-        async function loadShortcutToken() {
-            document.getElementById('settings-endpoint').textContent = location.origin + '/api/shortcut';
-            try {
-                const res = await fetch('/api/settings/token');
-                const data = await res.json();
-                shortcutToken = data.token;
-                renderToken();
-            } catch (e) {
-                console.error('Failed to load token:', e);
-            }
-        }
-
-        function toggleSettingsPanel() {
-            const panel = document.getElementById('settings-panel');
-            const isHidden = panel.classList.toggle('hidden');
-            if (!isHidden) loadShortcutToken();
-        }
-
-        function toggleTokenReveal() {
-            tokenRevealed = !tokenRevealed;
-            renderToken();
-        }
-
-        function copyToken() {
-            if (!shortcutToken) return;
-            navigator.clipboard.writeText(shortcutToken).then(() => {
-                const btn = document.getElementById('token-copy-btn');
-                btn.classList.add('text-[var(--text-accent)]');
-                setTimeout(() => btn.classList.remove('text-[var(--text-accent)]'), 1200);
-            });
-        }
-
-        async function regenerateToken() {
-            if (!confirm('Regenerate token? The shortcut already installed on your phone will stop working until you re-add it.')) return;
-            try {
-                const res = await fetch('/api/settings/token', { method: 'POST' });
-                const data = await res.json();
-                shortcutToken = data.token;
-                tokenRevealed = true;
-                renderToken();
-            } catch (e) {
-                console.error('Regenerate failed:', e);
-            }
-        }
-
-        // --- Init ---
-
-        loadVoices();
-        loadItems().then(() => {
-            const hasProcessing = items.some(i => i.status === 'processing' || i.status === 'queued');
-            if (hasProcessing) {
-                pollUpdates();
-            }
-        });
-
-        // Init speed button label
-        const initSpeed = getStoredSpeed();
-        document.getElementById('speed-btn').textContent = initSpeed === 1 ? '1x' : initSpeed + 'x';
-    </script>
+    <nav id="bottom-nav" class="bottom-nav">
+        <button class="nav-item" data-nav="home" onclick="navigate('#/home')">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10"/></svg>Home</button>
+        <button class="nav-item" data-nav="feeds" onclick="navigate('#/feeds')">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10"/></svg>Feeds</button>
+        <button class="nav-item" style="flex:0 0 auto" onclick="toggleAddPanel()" title="Capture">
+            <span class="nav-center"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg></span></button>
+        <button class="nav-item" data-nav="library" onclick="navigate('#/library')">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5h16v14H4zM4 9h16"/></svg>Library</button>
+        <button class="nav-item" data-nav="settings" onclick="navigate('#/settings')">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-2.92.68 2 2 0 11-3.86 0 1.65 1.65 0 00-2.92-.68l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.14.31.22.65.22 1z"/></svg>Settings</button>
+    </nav>
+
+  <div id="now-playing" class="np-overlay">
+    <div class="np-top">
+      <button class="np-icon-btn" onclick="closeNowPlaying()" title="Close">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <span style="font-weight:600;color:var(--text)">Now Playing</span>
+      <span style="width:24px"></span>
+    </div>
+    <div id="np-art" class="np-art"></div>
+    <div id="np-wave" class="np-wave" onclick="seekWaveform(event)"></div>
+    <div class="np-times"><span id="np-time">0:00</span><span id="np-duration">0:00</span></div>
+    <div id="np-title" class="np-title"></div>
+    <div id="np-source" class="np-source"></div>
+    <div class="np-ctrls">
+      <button class="ic" onclick="cycleSpeed()"><span id="np-speed" style="font-weight:700;font-size:15px">1x</span></button>
+      <button class="ic" onclick="skipBack()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7M20 19l-7-7 7-7"/></svg></button>
+      <button class="np-bigplay" onclick="togglePlay()">
+        <svg id="np-play-icon" fill="currentColor" viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg>
+        <svg id="np-pause-icon" class="hidden" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+      </button>
+      <button class="ic" onclick="skipForward()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M4 5l7 7-7 7"/></svg></button>
+      <button class="ic" onclick="toggleUpNext()" title="Queue"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h10M16 14l5 3-5 3z"/></svg></button>
+    </div>
+    <div id="np-queue" class="np-queue hidden"></div>
+  </div>
+
+    <script type="module" src="/static/js/main.js"></script>
 </body>
 </html>

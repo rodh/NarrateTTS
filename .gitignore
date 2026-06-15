@@ -6,3 +6,4 @@ data/
 .DS_Store
 .env
 static/artwork-playlist-*.png
+.superpowers/

@@ -38,6 +38,12 @@ LLM_SEMAPHORE = asyncio.Semaphore(1)
 # Feed settings
 FEED_TTL_DAYS = int(os.environ.get("FEED_TTL_DAYS", "7"))
 
+# Stable, externally-reachable base URL baked into the iOS capture shortcut
+# (e.g. https://narrate.howlab.us). When set, the shortcut always targets this
+# endpoint instead of whatever host the browser used to download it — required so
+# capture works off-LAN. Leave empty to derive it from the request.
+PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "")
+
 # Server settings
 HOST = "127.0.0.1"
 PORT = 8090

@@ -108,3 +108,30 @@ def test_download_embeds_current_token_when_unsigned(client, monkeypatch):
         "Value"
     ]["WFDictionaryFieldValueItems"]
     assert headers[0]["WFValue"]["Value"]["string"] == f"Bearer {token}"
+
+
+def test_download_uses_public_base_url_when_set(client, monkeypatch):
+    """When PUBLIC_BASE_URL is configured, the shortcut bakes that exact endpoint,
+    regardless of the Host the browser used to download it."""
+    import plistlib
+    import app.main as main
+    monkeypatch.setattr(main, "sign_shortcut", lambda data: (data, False))
+    monkeypatch.setattr(main, "PUBLIC_BASE_URL", "https://narrate.howlab.us")
+
+    resp = client.get("/api/shortcut")
+    assert resp.status_code == 200
+    plist = plistlib.loads(resp.content)
+    url = plist["WFWorkflowActions"][0]["WFWorkflowActionParameters"]["WFURLActionURL"]
+    assert url == "https://narrate.howlab.us/api/shortcut"
+
+
+def test_download_strips_trailing_slash_from_public_base_url(client, monkeypatch):
+    import plistlib
+    import app.main as main
+    monkeypatch.setattr(main, "sign_shortcut", lambda data: (data, False))
+    monkeypatch.setattr(main, "PUBLIC_BASE_URL", "https://narrate.howlab.us/")
+
+    resp = client.get("/api/shortcut")
+    plist = plistlib.loads(resp.content)
+    url = plist["WFWorkflowActions"][0]["WFWorkflowActionParameters"]["WFURLActionURL"]
+    assert url == "https://narrate.howlab.us/api/shortcut"

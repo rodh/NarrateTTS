@@ -135,3 +135,26 @@ def test_download_strips_trailing_slash_from_public_base_url(client, monkeypatch
     plist = plistlib.loads(resp.content)
     url = plist["WFWorkflowActions"][0]["WFWorkflowActionParameters"]["WFURLActionURL"]
     assert url == "https://narrate.howlab.us/api/shortcut"
+
+
+def test_extraction_failure_saves_visible_error_item(client, monkeypatch):
+    """A URL whose content can't be extracted (paywall/403) should still create a
+    visible item with status 'error' instead of silently dropping (HTTP 400)."""
+    import app.main as main
+
+    async def _boom(url):
+        raise RuntimeError("Client error '403 Forbidden'")
+
+    monkeypatch.setattr(main, "extract_from_url", _boom)
+
+    resp = client.post("/api/convert", json={"url": "https://paywalled.example/secret"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "error"
+
+    items = client.get("/api/items").json()
+    match = next(i for i in items if i["id"] == body["id"])
+    assert match["status"] == "error"
+    assert match["source_url"] == "https://paywalled.example/secret"
+    assert "403" in (match["error"] or "")
+    assert match["title"]  # has a readable title derived from the URL

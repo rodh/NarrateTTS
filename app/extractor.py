@@ -1,7 +1,21 @@
+from urllib.parse import urlparse
+
 import httpx
 from readability import Document
 
 from app.config import AUDIO_DIR
+
+
+def title_from_url(url: str) -> str:
+    """A readable fallback title derived from a URL (for failed extractions)."""
+    try:
+        parsed = urlparse(url)
+        host = parsed.netloc.replace("www.", "")
+        slug = parsed.path.rstrip("/").split("/")[-1]
+        slug = slug.replace("-", " ").replace("_", " ").strip()
+        return f"{host}: {slug}" if slug else (host or url)
+    except Exception:
+        return url
 
 
 # Many sites 403 / serve degraded content to non-browser clients. Present a

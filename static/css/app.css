@@ -1,0 +1,67 @@
+:root {
+  --accent: #f1582c;
+  --accent-press: #d8451c;
+  --accent-text: #ffffff;
+  --bg: #faf9f7;
+  --surface: #ffffff;
+  --surface-2: #f3f1ee;
+  --bg-input: #f3f1ee;
+  --bg-button: #ece9e4;
+  --bg-button-hover: #e0dcd5;
+  --border: #ececec;
+  --border-subtle: rgba(0,0,0,0.06);
+  --border-input: #dcd8d2;
+  --border-focus: #b8b2a8;
+  --text: #1a1a1a;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+  --text-accent: #1a1a1a;
+  --scrollbar: #d8d4cd;
+  --hover-bg: #f3f1ee;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #ff6a3d;
+    --accent-press: #f1582c;
+    --accent-text: #1a1a1a;
+    --bg: #0f0f10;
+    --surface: #1a1a1c;
+    --surface-2: #242427;
+    --bg-input: #1f1f22;
+    --bg-button: #2a2a2e;
+    --bg-button-hover: #36363b;
+    --border: #2a2a2e;
+    --border-subtle: rgba(255,255,255,0.07);
+    --border-input: #3a3a40;
+    --border-focus: #57575e;
+    --text: #ececec;
+    --text-secondary: #9ca3af;
+    --text-muted: #8b8b93;
+    --text-faint: #5c5c63;
+    --text-accent: #ffffff;
+    --scrollbar: #3a3a40;
+    --hover-bg: #1f1f22;
+    --shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+}
+html { height: 100%; }
+body { background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 3px; }
+
+/* Component polish (used by current markup + future screens) */
+.item-card { transition: background 0.15s; border-radius: var(--radius-sm); }
+.item-card:hover { background: var(--hover-bg); }
+
+/* Accent button: any element with .btn-accent */
+.btn-accent { background: var(--accent); color: var(--accent-text); border-radius: 999px; }
+.btn-accent:hover { background: var(--accent-press); }
+
+/* Rounded surfaces */
+.surface { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.pill { border-radius: 999px; }

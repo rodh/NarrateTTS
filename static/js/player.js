@@ -22,6 +22,91 @@ export function isAudioPlaying() {
   return !!(audio && !audio.paused);
 }
 
+// --- Now-Playing + waveform ---
+
+let currentPeaks = null;
+
+function bigArtStyle(item) {
+  if (item && item.image_url) return `background-image:url('${item.image_url}')`;
+  // gradient fallback consistent with imagery.js palette
+  return `background-image:linear-gradient(135deg,#f1582c,#5b2c91)`;
+}
+
+async function computePeaks(url, itemId, n = 80) {
+  const key = 'peaks_' + itemId;
+  const cached = localStorage.getItem(key);
+  if (cached) { try { return JSON.parse(cached); } catch {} }
+  try {
+    const buf = await (await fetch(url)).arrayBuffer();
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    const audioBuf = await ctx.decodeAudioData(buf);
+    const data = audioBuf.getChannelData(0);
+    const block = Math.max(1, Math.floor(data.length / n));
+    const peaks = [];
+    for (let i = 0; i < n; i++) {
+      let max = 0;
+      for (let j = 0; j < block; j++) { const v = Math.abs(data[i * block + j] || 0); if (v > max) max = v; }
+      peaks.push(max);
+    }
+    ctx.close();
+    const m = Math.max(...peaks, 0.01);
+    const norm = peaks.map(p => p / m);
+    localStorage.setItem(key, JSON.stringify(norm));
+    return norm;
+  } catch (e) {
+    return Array.from({ length: n }, () => 0.35); // flat fallback
+  }
+}
+
+function renderWaveBars(peaks) {
+  const wave = document.getElementById('np-wave');
+  if (!wave) return;
+  wave.innerHTML = peaks.map(p => `<i style="height:${Math.max(8, Math.round(p * 100))}%"></i>`).join('');
+}
+
+function updateWaveProgress() {
+  const wave = document.getElementById('np-wave');
+  if (!wave || !audio || !audio.duration) return;
+  const frac = audio.currentTime / audio.duration;
+  const bars = wave.children;
+  const lit = Math.floor(frac * bars.length);
+  for (let i = 0; i < bars.length; i++) bars[i].classList.toggle('on', i <= lit);
+}
+
+export function seekWaveform(event) {
+  const wave = document.getElementById('np-wave');
+  if (!wave || !audio || !audio.duration) return;
+  const rect = wave.getBoundingClientRect();
+  const frac = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+  audio.currentTime = frac * audio.duration;
+}
+
+export function openNowPlaying() {
+  const item = items.find(i => i.id === currentItemId);
+  if (!item) return;
+  document.getElementById('np-art').style.cssText += ';' + bigArtStyle(item);
+  document.getElementById('np-title').textContent = item.title || '';
+  let src = 'Text';
+  try { if (item.source_url) src = new URL(item.source_url).hostname.replace(/^www\./, ''); } catch {}
+  document.getElementById('np-source').textContent = src;
+  document.getElementById('np-speed').textContent = (getStoredSpeed() === 1) ? '1x' : getStoredSpeed() + 'x';
+  if (currentPeaks) renderWaveBars(currentPeaks);
+  updateWaveProgress();
+  syncNpPlayIcon();
+  document.getElementById('now-playing').classList.add('open');
+}
+
+export function closeNowPlaying() {
+  document.getElementById('now-playing').classList.remove('open');
+}
+
+function syncNpPlayIcon() {
+  const playing = audio && !audio.paused;
+  const pi = document.getElementById('np-play-icon'), pa = document.getElementById('np-pause-icon');
+  if (pi && pa) { pi.classList.toggle('hidden', playing); pa.classList.toggle('hidden', !playing); }
+}
+
 // --- Playback ---
 
 export function playItem(id, audioFile) {
@@ -41,6 +126,9 @@ export function playItem(id, audioFile) {
   const speed = getStoredSpeed();
   audio.playbackRate = speed;
 
+  currentPeaks = null;
+  computePeaks(`/audio/${audioFile}`, id).then(p => { currentPeaks = p; renderWaveBars(p); updateWaveProgress(); });
+
   const item = items.find(i => i.id === id);
   highWaterMark = item?.play_position || 0;
 
@@ -50,6 +138,7 @@ export function playItem(id, audioFile) {
     saveProgress();
     document.getElementById('play-icon').classList.remove('hidden');
     document.getElementById('pause-icon').classList.add('hidden');
+    syncNpPlayIcon();
     renderPreservingScroll();
   });
 
@@ -88,11 +177,13 @@ export function togglePlay() {
     audio.play();
     document.getElementById('play-icon').classList.add('hidden');
     document.getElementById('pause-icon').classList.remove('hidden');
+    syncNpPlayIcon();
   } else {
     audio.pause();
     saveProgress();
     document.getElementById('play-icon').classList.remove('hidden');
     document.getElementById('pause-icon').classList.add('hidden');
+    syncNpPlayIcon();
   }
   renderPreservingScroll();
 }
@@ -132,6 +223,7 @@ export function cycleSpeed() {
   localStorage.setItem('narrateTTS_playbackSpeed', next);
   if (audio) audio.playbackRate = next;
   document.getElementById('speed-btn').textContent = next === 1 ? '1x' : next + 'x';
+  const nps = document.getElementById('np-speed'); if (nps) nps.textContent = next === 1 ? '1x' : next + 'x';
 }
 
 export function updatePlayerUI() {
@@ -140,6 +232,10 @@ export function updatePlayerUI() {
   document.getElementById('player-progress').value = pct;
   document.getElementById('player-time').textContent = formatTime(audio.currentTime);
   document.getElementById('player-duration').textContent = formatTime(audio.duration);
+
+  const npt = document.getElementById('np-time'); if (npt) npt.textContent = formatTime(audio.currentTime);
+  const npd = document.getElementById('np-duration'); if (npd) npd.textContent = formatTime(audio.duration);
+  updateWaveProgress();
 
   if (audio.currentTime > highWaterMark) {
     highWaterMark = audio.currentTime;

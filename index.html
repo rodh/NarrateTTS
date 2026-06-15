@@ -99,7 +99,7 @@
                 </button>
             </div>
             <div class="flex-1 min-w-0">
-                <p id="player-title" class="text-sm font-medium truncate"></p>
+                <p id="player-title" class="text-sm font-medium truncate" onclick="openNowPlaying()"></p>
                 <div class="flex items-center gap-2 mt-1">
                     <span id="player-time" class="text-xs text-[var(--text-muted)] flex-shrink-0">0:00</span>
                     <input id="player-progress" type="range" min="0" max="100" value="0" class="flex-1 h-1 bg-[var(--bg-button)] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--accent-bg)]" oninput="seekTo(this.value)">

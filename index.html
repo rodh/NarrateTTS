@@ -6,60 +6,8 @@
     <link rel="icon" href="/static/favicon.ico" sizes="any">
     <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/app.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <style>
-        :root {
-            --bg: #ffffff;
-            --bg-raised: #f3f4f6;
-            --bg-input: #f3f4f6;
-            --bg-panel: #f9fafb;
-            --bg-button: #e5e7eb;
-            --bg-button-hover: #d1d5db;
-            --border: #e5e7eb;
-            --border-subtle: rgba(229, 231, 235, 0.5);
-            --border-input: #d1d5db;
-            --border-focus: #9ca3af;
-            --text: #111827;
-            --text-secondary: #4b5563;
-            --text-muted: #6b7280;
-            --text-faint: #9ca3af;
-            --text-accent: #111827;
-            --accent-bg: #111827;
-            --accent-text: #ffffff;
-            --scrollbar: #d1d5db;
-            --hover-bg: #f3f4f6;
-        }
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #0f0f0f;
-                --bg-raised: #1a1a1a;
-                --bg-input: #111827;
-                --bg-panel: #030712;
-                --bg-button: #1f2937;
-                --bg-button-hover: #374151;
-                --border: #1f2937;
-                --border-subtle: rgba(31, 41, 55, 0.5);
-                --border-input: #374151;
-                --border-focus: #6b7280;
-                --text: #e5e5e5;
-                --text-secondary: #9ca3af;
-                --text-muted: #6b7280;
-                --text-faint: #4b5563;
-                --text-accent: #ffffff;
-                --accent-bg: #ffffff;
-                --accent-text: #000000;
-                --scrollbar: #333333;
-                --hover-bg: #1a1a1a;
-            }
-        }
-        html { height: 100%; }
-        body { background: var(--bg); color: var(--text); }
-        .item-card { transition: background 0.15s; }
-        .item-card:hover { background: var(--hover-bg); }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 3px; }
-    </style>
 </head>
 <body class="flex flex-col overflow-hidden" style="height:100dvh">
 
@@ -88,7 +36,7 @@
                 <select id="voice-select" class="min-w-0 flex-1 bg-[var(--bg-input)] border border-[var(--border-input)] rounded-lg px-3 py-2.5 text-base focus:outline-none focus:border-[var(--border-focus)]">
                     <option value="af_heart" selected>Heart (F)</option>
                 </select>
-                <button id="convert-btn" onclick="convert()" class="bg-[var(--bg-button-hover)] hover:bg-[var(--bg-button)] text-[var(--text-accent)] px-5 py-2.5 rounded-lg text-sm font-medium transition shrink-0">Convert</button>
+                <button id="convert-btn" onclick="convert()" class="btn-accent px-5 py-2.5 rounded-lg text-sm font-medium transition shrink-0">Convert</button>
             </div>
         </div>
     </div>
@@ -102,7 +50,7 @@
                     <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)] mt-0.5">Send to NarrateTTS from the share sheet</p>
                     <p class="text-sm text-[var(--text-secondary)] mt-2">Open this page in Safari on your iPhone, tap <span class="text-[var(--text-accent)] font-medium">Add to iPhone</span>, then share any link to <span class="text-[var(--text-accent)] font-medium">Send to NarrateTTS</span> — it captures with your token baked in.</p>
                 </div>
-                <a href="/api/shortcut" download="SendToNarrate.shortcut" class="shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[var(--accent-bg)] text-[var(--accent-text)] font-medium text-sm hover:opacity-80 transition no-underline">
+                <a href="/api/shortcut" download="SendToNarrate.shortcut" class="btn-accent shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg font-medium text-sm hover:opacity-80 transition no-underline">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path stroke-linecap="round" d="M11 18h2"/></svg>
                     Add to iPhone
                 </a>
@@ -155,7 +103,7 @@
                 <button onclick="skipBack()" class="w-8 h-8 flex items-center justify-center rounded-full text-[var(--text-faint)] hover:text-[var(--text-accent)] transition flex-shrink-0" title="Back 30s">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z"/></svg>
                 </button>
-                <button id="play-btn" onclick="togglePlay()" class="w-10 h-10 flex items-center justify-center rounded-full bg-[var(--accent-bg)] text-[var(--accent-text)] hover:opacity-80 transition flex-shrink-0">
+                <button id="play-btn" onclick="togglePlay()" class="btn-accent w-10 h-10 flex items-center justify-center rounded-full hover:opacity-80 transition flex-shrink-0">
                     <svg id="play-icon" class="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
                     <svg id="pause-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
                 </button>
@@ -705,7 +653,7 @@
                 </div>
                 <div class="mb-4 flex gap-2">
                     <input id="new-playlist-name" type="text" placeholder="New playlist name..." class="flex-1 bg-[var(--bg-input)] border border-[var(--border-input)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--border-focus)]" onkeydown="if(event.key==='Enter')createPlaylist()">
-                    <button onclick="createPlaylist()" class="bg-[var(--bg-button-hover)] hover:bg-[var(--bg-button)] text-[var(--text-accent)] px-4 py-2 rounded-lg text-sm transition">Create</button>
+                    <button onclick="createPlaylist()" class="btn-accent px-4 py-2 rounded-lg text-sm transition">Create</button>
                 </div>`;
 
             if (playlists.length === 0) {

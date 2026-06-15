@@ -1,8 +1,9 @@
 import asyncio
+import re
 from pathlib import Path
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Header
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -89,6 +90,28 @@ async def api_convert(payload: dict):
     text_input = payload.get("text")
     voice = payload.get("voice") or DEFAULT_VOICE
     return await _create_conversion(source_url, text_input, voice)
+
+
+@app.post("/api/shortcut", status_code=201)
+async def api_shortcut(payload: dict, authorization: str | None = Header(default=None)):
+    """Token-gated capture endpoint for the iOS Shortcut. Body: {"input": "<url or text>"}."""
+    token = ""
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization[7:].strip()
+    if not verify_token(token):
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    raw = payload.get("input")
+    input_str = raw.strip() if isinstance(raw, str) else ""
+    if not input_str:
+        raise HTTPException(status_code=400, detail="input is required")
+
+    is_url = bool(re.match(r"^https?://", input_str, re.IGNORECASE))
+    return await _create_conversion(
+        url=input_str if is_url else None,
+        text_input=None if is_url else input_str,
+        voice=DEFAULT_VOICE,
+    )
 
 
 async def _process_tts(item_id: int, text: str, title: str, source_url: str | None, voice: str = "af_heart"):

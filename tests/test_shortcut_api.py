@@ -31,3 +31,53 @@ def test_convert_url_uses_stubbed_extractor(client):
 def test_convert_requires_url_or_text(client):
     resp = client.post("/api/convert", json={})
     assert resp.status_code == 400
+
+
+def _token(client):
+    return client.get("/api/settings/token").json()["token"]
+
+
+def test_shortcut_rejects_missing_token(client):
+    resp = client.post("/api/shortcut", json={"input": "https://example.com"})
+    assert resp.status_code == 401
+
+
+def test_shortcut_rejects_wrong_token(client):
+    _token(client)  # ensure one exists
+    resp = client.post(
+        "/api/shortcut",
+        json={"input": "https://example.com"},
+        headers={"Authorization": "Bearer wrong"},
+    )
+    assert resp.status_code == 401
+
+
+def test_shortcut_accepts_url_with_valid_token(client):
+    token = _token(client)
+    resp = client.post(
+        "/api/shortcut",
+        json={"input": "https://example.com/article"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["status"] == "queued"
+
+
+def test_shortcut_accepts_text_with_valid_token(client):
+    token = _token(client)
+    resp = client.post(
+        "/api/shortcut",
+        json={"input": "Just some plain text to narrate."},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 201
+
+
+def test_shortcut_rejects_blank_input(client):
+    token = _token(client)
+    resp = client.post(
+        "/api/shortcut",
+        json={"input": "   "},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code == 400

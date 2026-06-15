@@ -1,13 +1,14 @@
 import asyncio
+import re
 from pathlib import Path
 
 import httpx
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Header
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import HOST, PORT, AUDIO_DIR, STATIC_DIR, TTS_SERVICE_URL, KOKORO_MODEL, KOKORO_VOICES, FEED_TTL_DAYS
+from app.config import HOST, PORT, AUDIO_DIR, STATIC_DIR, TTS_SERVICE_URL, KOKORO_MODEL, KOKORO_VOICES, FEED_TTL_DAYS, DEFAULT_VOICE
 from app.db import (
     init_db, add_item, list_items, get_item, delete_item, update_item,
     count_items, update_play_position, create_playlist, list_playlists,
@@ -15,8 +16,10 @@ from app.db import (
     remove_item_from_playlist, list_playlist_items, get_item_playlists,
     list_completed_items, list_feed_items, get_items_playlist_map,
     mark_consumed,
+    ensure_token, regenerate_token, verify_token,
 )
 from app.feed import generate_feed, generate_opml, get_base_url
+from app.shortcuts import build_shortcut_plist, serialize_plist, sign_shortcut
 from app.extractor import extract_from_url, extract_from_text
 from app.summarizer import generate_summary
 from app.categorizer import categorize_item
@@ -59,6 +62,25 @@ async def api_voices():
     return {"voices": KOKORO_VOICES}
 
 
+async def _create_conversion(url: str | None, text_input: str | None, voice: str) -> dict:
+    """Extract content, create a queued item, and kick off background TTS."""
+    if url:
+        try:
+            extracted = await extract_from_url(url)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to extract content: {str(e)}")
+    elif text_input:
+        extracted = extract_from_text(text_input)
+    else:
+        raise HTTPException(status_code=400, detail="Provide 'url' or 'text'")
+
+    title = extracted["title"]
+    text = extracted["text"]
+    item_id = add_item(source_url=url, title=title, text=text)
+    asyncio.create_task(_process_tts(item_id, text, title, url, voice))
+    return {"id": item_id, "status": "queued"}
+
+
 @app.post("/api/convert")
 async def api_convert(payload: dict):
     """Convert text or URL to audio.
@@ -67,28 +89,62 @@ async def api_convert(payload: dict):
     """
     source_url = payload.get("url")
     text_input = payload.get("text")
-    voice = payload.get("voice") or "af_heart"
+    voice = payload.get("voice") or DEFAULT_VOICE
+    return await _create_conversion(source_url, text_input, voice)
 
-    if source_url:
-        try:
-            extracted = await extract_from_url(source_url)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to extract content: {str(e)}")
-        title = extracted["title"]
-        text = extracted["text"]
-    elif text_input:
-        extracted = extract_from_text(text_input)
-        title = extracted["title"]
-        text = extracted["text"]
-    else:
-        raise HTTPException(status_code=400, detail="Provide 'url' or 'text'")
 
-    item_id = add_item(source_url=source_url, title=title, text=text)
+@app.post("/api/shortcut", status_code=201)
+async def api_shortcut(payload: dict, authorization: str | None = Header(default=None)):
+    """Token-gated capture endpoint for the iOS Shortcut. Body: {"input": "<url or text>"}."""
+    token = ""
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization[7:].strip()
+    if not verify_token(token):
+        raise HTTPException(status_code=401, detail="Invalid token")
 
-    # Start TTS generation in background
-    asyncio.create_task(_process_tts(item_id, text, title, source_url, voice))
+    raw = payload.get("input")
+    input_str = raw.strip() if isinstance(raw, str) else ""
+    if not input_str:
+        raise HTTPException(status_code=400, detail="input is required")
 
-    return {"id": item_id, "status": "queued"}
+    is_url = bool(re.match(r"^https?://", input_str, re.IGNORECASE))
+    return await _create_conversion(
+        url=input_str if is_url else None,
+        text_input=None if is_url else input_str,
+        voice=DEFAULT_VOICE,
+    )
+
+
+def _api_base_url(request: Request) -> str:
+    """Reconstruct the externally-visible base URL (honours reverse-proxy headers)."""
+    host = request.headers.get(
+        "x-forwarded-host", request.headers.get("host", "localhost:8090")
+    )
+    proto = request.headers.get("x-forwarded-proto")
+    if not proto:
+        private = host.startswith(("localhost", "127.", "192.168.", "10.", "172."))
+        proto = "http" if private else "https"
+    return f"{proto}://{host}"
+
+
+@app.get("/api/shortcut")
+async def get_shortcut(request: Request):
+    """Serve a 'Send to NarrateTTS' .shortcut with the API token baked in."""
+    token = ensure_token()
+    api_url = f"{_api_base_url(request)}/api/shortcut"
+    plist = build_shortcut_plist(api_url, token)
+    signed, did_sign = sign_shortcut(serialize_plist(plist))
+
+    headers = {
+        "Content-Disposition": 'attachment; filename="SendToNarrate.shortcut"',
+    }
+    if not did_sign:
+        headers["X-Shortcut-Unsigned"] = "true"
+    return Response(
+        content=signed,
+        media_type="application/octet-stream",
+        headers=headers,
+    )
 
 
 async def _process_tts(item_id: int, text: str, title: str, source_url: str | None, voice: str = "af_heart"):
@@ -274,6 +330,19 @@ async def api_remove_from_playlist(playlist_id: int, item_id: int):
 @app.get("/api/items/{item_id}/playlists")
 async def api_item_playlists(item_id: int):
     return get_item_playlists(item_id)
+
+
+# --- Settings: API token ---
+
+
+@app.get("/api/settings/token")
+async def api_get_token():
+    return {"token": ensure_token()}
+
+
+@app.post("/api/settings/token")
+async def api_regenerate_token():
+    return {"token": regenerate_token()}
 
 
 # --- Backfill ---

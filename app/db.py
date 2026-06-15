@@ -1,5 +1,7 @@
 import sqlite3
 import json
+import secrets
+import hmac
 from pathlib import Path
 from datetime import datetime
 
@@ -53,6 +55,12 @@ def init_db():
         );
 
         CREATE INDEX IF NOT EXISTS idx_playlist_items_pos ON playlist_items(playlist_id, position);
+
+        CREATE TABLE IF NOT EXISTS api_token (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            token TEXT NOT NULL,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
     """)
     conn.commit()
     try:
@@ -303,3 +311,46 @@ def list_feed_items(ttl_days: int, limit: int = 500) -> list[dict]:
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+# --- API Token (single global token for shortcut capture) ---
+
+
+def ensure_token() -> str:
+    """Return the API token, minting one on first use."""
+    conn = get_connection()
+    row = conn.execute("SELECT token FROM api_token WHERE id = 1").fetchone()
+    if row:
+        conn.close()
+        return row["token"]
+    token = secrets.token_hex(32)
+    conn.execute("INSERT INTO api_token (id, token) VALUES (1, ?)", (token,))
+    conn.commit()
+    conn.close()
+    return token
+
+
+def regenerate_token() -> str:
+    """Replace the token with a fresh one, invalidating any installed shortcut."""
+    token = secrets.token_hex(32)
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO api_token (id, token, created_at) VALUES (1, ?, datetime('now')) "
+        "ON CONFLICT(id) DO UPDATE SET token = excluded.token, created_at = excluded.created_at",
+        (token,),
+    )
+    conn.commit()
+    conn.close()
+    return token
+
+
+def verify_token(value: str) -> bool:
+    """Constant-time check of a presented token against the stored one."""
+    if not value:
+        return False
+    conn = get_connection()
+    row = conn.execute("SELECT token FROM api_token WHERE id = 1").fetchone()
+    conn.close()
+    if not row:
+        return False
+    return hmac.compare_digest(value, row["token"])

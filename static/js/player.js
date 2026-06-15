@@ -107,9 +107,47 @@ function syncNpPlayIcon() {
   if (pi && pa) { pi.classList.toggle('hidden', playing); pa.classList.toggle('hidden', !playing); }
 }
 
+// --- Playback queue ---
+
+const lists = {};         // key -> ordered array of playable item objects
+let queue = [];
+let queueIndex = -1;
+
+export function setList(key, arr) {
+  lists[key] = (arr || []).filter(i => i.status === 'completed' && i.audio_path);
+}
+
+function _fileOf(item) { return item.audio_path ? item.audio_path.split('/').pop() : ''; }
+
+export function playFromList(key, index) {
+  const arr = lists[key] || [];
+  if (!arr.length) return;
+  queue = arr;
+  queueIndex = Math.max(0, Math.min(index, arr.length - 1));
+  const item = queue[queueIndex];
+  _play(item.id, _fileOf(item));
+}
+
+export function playItem(id, file) {   // single play, clears any queue context
+  queue = []; queueIndex = -1;
+  _play(id, file);
+}
+
+export function nextInQueue() {
+  if (queueIndex >= 0 && queueIndex < queue.length - 1) {
+    queueIndex++; const it = queue[queueIndex]; _play(it.id, _fileOf(it)); return true;
+  }
+  return false;
+}
+export function prevInQueue() {
+  if (queueIndex > 0) { queueIndex--; const it = queue[queueIndex]; _play(it.id, _fileOf(it)); return true; }
+  return false;
+}
+export function upNext() { return queueIndex >= 0 ? queue.slice(queueIndex + 1) : []; }
+
 // --- Playback ---
 
-export function playItem(id, audioFile) {
+function _play(id, audioFile) {
   if (currentItemId === id && audio) {
     togglePlay();
     return;
@@ -140,6 +178,7 @@ export function playItem(id, audioFile) {
     document.getElementById('pause-icon').classList.add('hidden');
     syncNpPlayIcon();
     renderPreservingScroll();
+    nextInQueue();  // if there is a next item, it auto-plays; otherwise playback stops
   });
 
   // Resume from saved position
@@ -161,6 +200,8 @@ export function playItem(id, audioFile) {
     navigator.mediaSession.setActionHandler('pause', () => togglePlay());
     navigator.mediaSession.setActionHandler('seekbackward', () => skipBack());
     navigator.mediaSession.setActionHandler('seekforward', () => skipForward());
+    navigator.mediaSession.setActionHandler('nexttrack', () => nextInQueue());
+    navigator.mediaSession.setActionHandler('previoustrack', () => prevInQueue());
   }
 
   audio.play();

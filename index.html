@@ -123,6 +123,31 @@
             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-2.92.68 2 2 0 11-3.86 0 1.65 1.65 0 00-2.92-.68l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.14.31.22.65.22 1z"/></svg>Settings</button>
     </nav>
 
+  <div id="now-playing" class="np-overlay">
+    <div class="np-top">
+      <button class="np-icon-btn" onclick="closeNowPlaying()" title="Close">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <span style="font-weight:600;color:var(--text)">Now Playing</span>
+      <span style="width:24px"></span>
+    </div>
+    <div id="np-art" class="np-art"></div>
+    <div id="np-wave" class="np-wave" onclick="seekWaveform(event)"></div>
+    <div class="np-times"><span id="np-time">0:00</span><span id="np-duration">0:00</span></div>
+    <div id="np-title" class="np-title"></div>
+    <div id="np-source" class="np-source"></div>
+    <div class="np-ctrls">
+      <button class="ic" onclick="cycleSpeed()"><span id="np-speed" style="font-weight:700;font-size:15px">1x</span></button>
+      <button class="ic" onclick="skipBack()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7M20 19l-7-7 7-7"/></svg></button>
+      <button class="np-bigplay" onclick="togglePlay()">
+        <svg id="np-play-icon" fill="currentColor" viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg>
+        <svg id="np-pause-icon" class="hidden" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+      </button>
+      <button class="ic" onclick="skipForward()"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M4 5l7 7-7 7"/></svg></button>
+      <button class="ic" onclick="navigate('#/feeds')" title="Queue"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h10M16 14l5 3-5 3z"/></svg></button>
+    </div>
+  </div>
+
     <script type="module" src="/static/js/main.js"></script>
 </body>
 </html>

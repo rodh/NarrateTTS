@@ -15,6 +15,7 @@ from app.db import (
     remove_item_from_playlist, list_playlist_items, get_item_playlists,
     list_completed_items, list_feed_items, get_items_playlist_map,
     mark_consumed,
+    ensure_token, regenerate_token, verify_token,
 )
 from app.feed import generate_feed, generate_opml, get_base_url
 from app.extractor import extract_from_url, extract_from_text
@@ -274,6 +275,19 @@ async def api_remove_from_playlist(playlist_id: int, item_id: int):
 @app.get("/api/items/{item_id}/playlists")
 async def api_item_playlists(item_id: int):
     return get_item_playlists(item_id)
+
+
+# --- Settings: API token ---
+
+
+@app.get("/api/settings/token")
+async def api_get_token():
+    return {"token": ensure_token()}
+
+
+@app.post("/api/settings/token")
+async def api_regenerate_token():
+    return {"token": regenerate_token()}
 
 
 # --- Backfill ---

@@ -235,6 +235,36 @@ async def api_update_progress(item_id: int, payload: dict):
     return {"ok": True}
 
 
+@app.post("/api/items/{item_id}/retry")
+async def api_retry_item(item_id: int):
+    """Retry a failed item: re-extract from its URL if needed, then re-run TTS."""
+    item = get_item(item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    source_url = item.get("source_url")
+    title = item.get("title")
+    text = item.get("text") or ""
+
+    # Extraction failures have no text — re-extract first.
+    if not text:
+        if not source_url:
+            raise HTTPException(status_code=400, detail="Nothing to retry")
+        try:
+            extracted = await extract_from_url(source_url)
+        except Exception as e:
+            update_item(item_id, status="error", error=f"Couldn't extract content: {str(e)}")
+            return {"id": item_id, "status": "error"}
+        title = extracted["title"]
+        text = extracted["text"]
+        update_item(item_id, title=title, text=text,
+                    word_count=len(text.split()), error="")
+
+    update_item(item_id, status="processing", error="")
+    asyncio.create_task(_process_tts(item_id, text, title, source_url, DEFAULT_VOICE))
+    return {"id": item_id, "status": "processing"}
+
+
 # --- Feed Endpoints ---
 
 @app.get("/feed")

@@ -1,13 +1,10 @@
 import * as api from './api.js';
-import { playItem, getCurrentItemId, isAudioPlaying, resetProgress, setItems, stopForDeletedItem, setList, playFromList } from './player.js';
+import { playItem, getCurrentItemId, isAudioPlaying, resetProgress, stopForDeletedItem, setList, playFromList } from './player.js';
 import { itemArt } from './imagery.js';
 
 // --- Shared state ---
 let items = [];
 let playlistMap = {};
-
-// Share the items array reference with the player module.
-setItems(items);
 
 export function getItems() {
   return items;
@@ -25,7 +22,7 @@ export async function loadItems() {
       api.getItems(100),
       api.getPlaylistMap(),
     ]);
-    // Mutate in place so the shared reference (player.setItems) stays valid.
+    // Mutate in place so player.getItems() keeps seeing the live array.
     items.length = 0;
     if (Array.isArray(itemsRes)) items.push(...itemsRes);
     playlistMap = mapRes;

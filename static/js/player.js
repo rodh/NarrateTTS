@@ -1,5 +1,5 @@
 import { patchProgress } from './api.js';
-import { renderPreservingScroll } from './library.js';
+import { renderPreservingScroll, getItems } from './library.js';
 
 // --- Module-scoped state ---
 let audio = null;
@@ -7,12 +7,8 @@ let currentItemId = null;
 let highWaterMark = 0;
 let saveTimeout = null;
 
-// Shared reference to the library's items array (set via setItems).
-let items = [];
-
-export function setItems(itemsRef) {
-  items = itemsRef;
-}
+// The library owns the items array; read it lazily via getItems() to avoid a
+// circular-import temporal-dead-zone (player imports library and vice versa).
 
 export function getCurrentItemId() {
   return currentItemId;
@@ -83,7 +79,7 @@ export function seekWaveform(event) {
 }
 
 export function openNowPlaying() {
-  const item = items.find(i => i.id === currentItemId);
+  const item = getItems().find(i => i.id === currentItemId);
   if (!item) return;
   document.getElementById('np-art').style.cssText += ';' + bigArtStyle(item);
   document.getElementById('np-title').textContent = item.title || '';
@@ -181,7 +177,7 @@ function _play(id, audioFile) {
   currentPeaks = null;
   computePeaks(`/audio/${audioFile}`, id).then(p => { currentPeaks = p; renderWaveBars(p); updateWaveProgress(); });
 
-  const item = items.find(i => i.id === id);
+  const item = getItems().find(i => i.id === id);
   highWaterMark = item?.play_position || 0;
 
   audio.addEventListener('timeupdate', updatePlayerUI);
@@ -301,7 +297,7 @@ export function updatePlayerUI() {
 export async function resetProgress(id) {
   try {
     await patchProgress(id, 0);
-    const item = items.find(i => i.id === id);
+    const item = getItems().find(i => i.id === id);
     if (item) item.play_position = 0;
     if (currentItemId === id) {
       highWaterMark = 0;
@@ -315,7 +311,7 @@ export async function resetProgress(id) {
 
 export function saveProgress() {
   if (!currentItemId || highWaterMark <= 0) return;
-  const item = items.find(i => i.id === currentItemId);
+  const item = getItems().find(i => i.id === currentItemId);
   if (item && highWaterMark > (item.play_position || 0)) {
     item.play_position = highWaterMark;
   }

@@ -12,23 +12,12 @@
 <body class="flex flex-col overflow-hidden" style="height:100dvh">
 
     <!-- Header -->
-    <header class="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-[var(--border)] relative">
-        <div class="flex items-center gap-2">
-            <img src="/static/apple-touch-icon.png" alt="" class="w-7 h-7 rounded">
-            <h1 class="text-lg font-semibold tracking-tight">NarrateTTS</h1>
-        </div>
-        <div class="flex items-center gap-2">
-            <input id="search" type="text" placeholder="Search..." class="bg-[var(--bg-input)] border border-[var(--border-input)] rounded-lg px-3 py-1.5 text-sm w-36 sm:w-48 focus:outline-none focus:border-[var(--border-focus)]" oninput="render()">
-            <button onclick="toggleSettingsPanel()" id="settings-btn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--bg-button)] hover:bg-[var(--bg-button-hover)] text-[var(--text-secondary)] hover:text-[var(--text-accent)] transition" title="Settings">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            </button>
-            <button onclick="toggleAddPanel()" id="add-btn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--bg-button)] hover:bg-[var(--bg-button-hover)] text-[var(--text-secondary)] hover:text-[var(--text-accent)] transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg>
-            </button>
-        </div>
+    <header class="flex items-center gap-2 px-4 sm:px-6 py-3 border-b border-[var(--border)]">
+        <img src="/static/apple-touch-icon.png" alt="" class="w-7 h-7 rounded">
+        <h1 class="text-lg font-semibold tracking-tight">NarrateTTS</h1>
     </header>
 
-    <!-- Add Panel (dropdown) -->
+    <!-- Add Panel (overlay dropdown, toggled by nav ＋) -->
     <div id="add-panel" class="hidden border-b border-[var(--border)] bg-[var(--bg-panel)] px-4 sm:px-6 py-4 overflow-hidden">
         <div class="flex flex-col gap-2 max-w-full">
             <textarea id="url-input" rows="1" placeholder="Paste a URL or text..." class="w-full bg-[var(--bg-input)] border border-[var(--border-input)] rounded-lg px-4 py-2.5 text-base focus:outline-none focus:border-[var(--border-focus)] min-w-0 resize-none overflow-hidden leading-normal" oninput="autoResize(this)" onpaste="setTimeout(() => autoResize(this), 0)" onkeydown="handleInputKey(event)"></textarea>
@@ -41,63 +30,59 @@
         </div>
     </div>
 
-    <!-- Settings Panel (dropdown) -->
-    <div id="settings-panel" class="hidden border-b border-[var(--border)] bg-[var(--bg-panel)] px-4 sm:px-6 py-4 overflow-hidden">
-        <div class="max-w-md">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <p class="text-sm font-semibold">iOS Shortcut</p>
-                    <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)] mt-0.5">Send to NarrateTTS from the share sheet</p>
-                    <p class="text-sm text-[var(--text-secondary)] mt-2">Open this page in Safari on your iPhone, tap <span class="text-[var(--text-accent)] font-medium">Add to iPhone</span>, then share any link to <span class="text-[var(--text-accent)] font-medium">Send to NarrateTTS</span> — it captures with your token baked in.</p>
-                </div>
-                <a href="/api/shortcut" download="SendToNarrate.shortcut" class="btn-accent shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg font-medium text-sm hover:opacity-80 transition no-underline">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path stroke-linecap="round" d="M11 18h2"/></svg>
-                    Add to iPhone
-                </a>
-            </div>
-            <div class="mt-3 rounded-lg border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2">
-                <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)]">Endpoint</p>
-                <p id="settings-endpoint" class="font-mono text-xs text-[var(--text-secondary)] truncate">…</p>
-            </div>
-            <div class="mt-2 flex items-center justify-between gap-2 rounded-lg border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2">
-                <div class="min-w-0">
-                    <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)]">Token</p>
-                    <p id="settings-token" class="font-mono text-xs text-[var(--text-secondary)] truncate">…</p>
-                </div>
-                <div class="flex items-center gap-1 shrink-0">
-                    <button onclick="toggleTokenReveal()" id="token-reveal-btn" class="p-1.5 rounded-md text-[var(--text-faint)] hover:text-[var(--text-accent)] transition" title="Show token">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    </button>
-                    <button onclick="copyToken()" id="token-copy-btn" class="p-1.5 rounded-md text-[var(--text-faint)] hover:text-[var(--text-accent)] transition" title="Copy token">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                    </button>
-                </div>
-            </div>
-            <button onclick="regenerateToken()" class="mt-2 inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[var(--text-faint)] hover:text-[var(--text-secondary)] transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.49 9A9 9 0 105.64 5.64L4 4m16 16l-1.64-1.64A9 9 0 0020.49 9"/></svg>
-                Regenerate token
-            </button>
-        </div>
-    </div>
+    <main class="flex-1 overflow-y-auto" id="screen-host">
+        <section id="screen-home" class="px-4 sm:px-6 py-4 hidden"></section>
 
-    <!-- Tab Bar -->
-    <nav class="flex border-b border-[var(--border)] px-4 sm:px-6">
-        <button onclick="switchTab('library')" id="tab-library" class="px-4 py-2 text-sm font-medium border-b-2 border-[var(--text-accent)] text-[var(--text-accent)]">Library</button>
-        <button onclick="switchTab('playlists')" id="tab-playlists" class="px-4 py-2 text-sm font-medium border-b-2 border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]">Playlists</button>
-    </nav>
+        <section id="screen-feeds" class="px-4 sm:px-6 py-4 hidden">
+            <div id="playlists-view"><!-- Playlists rendered here --></div>
+        </section>
 
-    <!-- Main Content: Library -->
-    <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-4" id="library">
-        <!-- Items rendered here -->
+        <section id="screen-library" class="px-4 sm:px-6 py-4 hidden">
+            <input id="search" type="text" placeholder="Search..." class="w-full mb-3 bg-[var(--bg-input)] border border-[var(--border-input)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--border-focus)]" oninput="render()">
+            <div id="library"><!-- Items rendered here --></div>
+        </section>
+
+        <section id="screen-settings" class="px-4 sm:px-6 py-4 hidden">
+            <div class="max-w-md">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-sm font-semibold">iOS Shortcut</p>
+                        <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)] mt-0.5">Send to NarrateTTS from the share sheet</p>
+                        <p class="text-sm text-[var(--text-secondary)] mt-2">Open this page in Safari on your iPhone, tap <span class="text-[var(--text-accent)] font-medium">Add to iPhone</span>, then share any link to <span class="text-[var(--text-accent)] font-medium">Send to NarrateTTS</span> — it captures with your token baked in.</p>
+                    </div>
+                    <a href="/api/shortcut" download="SendToNarrate.shortcut" class="btn-accent shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-lg font-medium text-sm hover:opacity-80 transition no-underline">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path stroke-linecap="round" d="M11 18h2"/></svg>
+                        Add to iPhone
+                    </a>
+                </div>
+                <div class="mt-3 rounded-lg border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2">
+                    <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)]">Endpoint</p>
+                    <p id="settings-endpoint" class="font-mono text-xs text-[var(--text-secondary)] truncate">…</p>
+                </div>
+                <div class="mt-2 flex items-center justify-between gap-2 rounded-lg border border-[var(--border-input)] bg-[var(--bg-input)] px-3 py-2">
+                    <div class="min-w-0">
+                        <p class="text-[11px] uppercase tracking-wide text-[var(--text-faint)]">Token</p>
+                        <p id="settings-token" class="font-mono text-xs text-[var(--text-secondary)] truncate">…</p>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="toggleTokenReveal()" id="token-reveal-btn" class="p-1.5 rounded-md text-[var(--text-faint)] hover:text-[var(--text-accent)] transition" title="Show token">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </button>
+                        <button onclick="copyToken()" id="token-copy-btn" class="p-1.5 rounded-md text-[var(--text-faint)] hover:text-[var(--text-accent)] transition" title="Copy token">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <button onclick="regenerateToken()" class="mt-2 inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-[var(--text-faint)] hover:text-[var(--text-secondary)] transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M20.49 9A9 9 0 105.64 5.64L4 4m16 16l-1.64-1.64A9 9 0 0020.49 9"/></svg>
+                    Regenerate token
+                </button>
+            </div>
+        </section>
     </main>
 
-    <!-- Main Content: Playlists -->
-    <main class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 hidden" id="playlists-view">
-        <!-- Playlists rendered here -->
-    </main>
-
-    <!-- Playback Bar -->
-    <div id="player" class="hidden border-t border-[var(--border)] px-4 sm:px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+    <!-- Mini-player (sits above the nav) -->
+    <div id="player" class="hidden border-t border-[var(--border)] px-4 sm:px-6 py-2">
         <div class="flex items-center gap-3 sm:gap-4">
             <div class="flex items-center gap-1">
                 <button onclick="skipBack()" class="w-8 h-8 flex items-center justify-center rounded-full text-[var(--text-faint)] hover:text-[var(--text-accent)] transition flex-shrink-0" title="Back 30s">
@@ -122,6 +107,19 @@
             <button id="speed-btn" onclick="cycleSpeed()" class="text-xs text-[var(--text-faint)] hover:text-[var(--text-accent)] transition flex-shrink-0 px-2 py-1 rounded bg-[var(--bg-button)] hover:bg-[var(--bg-button-hover)] min-w-[3rem] text-center" title="Playback speed">1x</button>
         </div>
     </div>
+
+    <nav id="bottom-nav" class="bottom-nav">
+        <button class="nav-item" data-nav="home" onclick="navigate('#/home')">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10"/></svg>Home</button>
+        <button class="nav-item" data-nav="feeds" onclick="navigate('#/feeds')">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10"/></svg>Feeds</button>
+        <button class="nav-item" style="flex:0 0 auto" onclick="toggleAddPanel()" title="Capture">
+            <span class="nav-center"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14m-7-7h14"/></svg></span></button>
+        <button class="nav-item" data-nav="library" onclick="navigate('#/library')">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5h16v14H4zM4 9h16"/></svg>Library</button>
+        <button class="nav-item" data-nav="settings" onclick="navigate('#/settings')">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-2.92.68 2 2 0 11-3.86 0 1.65 1.65 0 00-2.92-.68l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9c.14.31.22.65.22 1z"/></svg>Settings</button>
+    </nav>
 
     <script type="module" src="/static/js/main.js"></script>
 </body>

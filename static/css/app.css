@@ -19,6 +19,11 @@
   --text-accent: #1a1a1a;
   --scrollbar: #d8d4cd;
   --hover-bg: #f3f1ee;
+  /* Aliases for markup that still references the old names. Defined via the
+     themed tokens so they adapt to dark automatically. */
+  --bg-panel: var(--surface);
+  --bg-raised: var(--surface-2);
+  --accent-bg: var(--accent);
   --radius: 18px;
   --radius-sm: 12px;
   --shadow: 0 1px 3px rgba(0,0,0,0.08);

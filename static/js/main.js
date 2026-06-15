@@ -21,11 +21,12 @@ library.loadVoices();
 // Load items once up front (Home + Library share the array), then route.
 library.loadItems().then(() => {
   if (library.hasProcessing()) library.pollUpdates();
-  initRouter((target) => {
-    if (target === 'home') home.render();
-    else if (target === 'feeds') playlists.loadPlaylists();
-    else if (target === 'library') library.render();
-    else if (target === 'settings') settings.loadShortcutToken();
+  initRouter((name, route) => {
+    if (name === 'home') home.render();
+    else if (name === 'feeds') playlists.loadPlaylists();
+    else if (name === 'library') library.render();
+    else if (name === 'settings') settings.loadShortcutToken();
+    else if (name === 'feed') playlists.renderFeedDetail(route.split('/')[1]);
   });
 });
 

@@ -1,4 +1,4 @@
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import httpx
 from readability import Document
@@ -47,7 +47,20 @@ async def extract_from_url(url: str) -> dict[str, str]:
     # Strip HTML tags to get plain text
     text = _strip_html(html)
 
-    return {"title": title, "text": text.strip()}
+    image_url = _extract_og_image(response.text, url)
+    return {"title": title, "text": text.strip(), "image_url": image_url}
+
+
+def _extract_og_image(html: str, base_url: str) -> str | None:
+    """Find an og:image / twitter:image URL in page HTML, resolved to absolute."""
+    import re
+    for prop in ("og:image", "twitter:image", "twitter:image:src"):
+        p = re.escape(prop)
+        m = (re.search(r'<meta[^>]+(?:property|name)=["\']' + p + r'["\'][^>]+content=["\']([^"\']+)["\']', html, re.I)
+             or re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name)=["\']' + p + r'["\']', html, re.I))
+        if m:
+            return urljoin(base_url, m.group(1).strip())
+    return None
 
 
 def extract_from_text(text: str) -> dict[str, str]:

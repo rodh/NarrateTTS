@@ -10,3 +10,9 @@ def test_falls_back_to_twitter_image():
 
 def test_returns_none_when_absent():
     assert _extract_og_image("<html><head></head></html>", "https://x.com/post") is None
+
+def test_add_item_persists_image_url(temp_db):
+    from app.db import init_db, add_item, get_item
+    init_db()
+    iid = add_item(source_url="https://x.com/p", title="T", text="body", image_url="https://x.com/a.jpg")
+    assert get_item(iid)["image_url"] == "https://x.com/a.jpg"

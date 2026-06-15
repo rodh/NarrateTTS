@@ -80,7 +80,7 @@ async def _create_conversion(url: str | None, text_input: str | None, voice: str
 
     title = extracted["title"]
     text = extracted["text"]
-    item_id = add_item(source_url=url, title=title, text=text)
+    item_id = add_item(source_url=url, title=title, text=text, image_url=extracted.get("image_url"))
     asyncio.create_task(_process_tts(item_id, text, title, url, voice))
     return {"id": item_id, "status": "queued"}
 

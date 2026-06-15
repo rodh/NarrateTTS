@@ -8,11 +8,13 @@ if [ ! -d .venv ]; then
 fi
 source .venv/bin/activate
 
-# Load local overrides (API keys, etc.) if present
+# Load configuration from .env (see .env.example)
 if [ -f .env ]; then
     set -a
     source .env
     set +a
+else
+    echo "Warning: .env not found. Copy .env.example to .env and configure it."
 fi
 
 cleanup() {
@@ -24,10 +26,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# Start main app (TTS is handled by the standalone mlx-audio service)
-export TTS_SERVICE_URL=http://macstudio1.lab:8203
-export LLM_SERVICE_URL=https://lumi-omlx.howlab.us
-export LLM_MODEL=gemma-2-9b-it-4bit
+# Start main app (configuration comes from .env)
 echo "Starting NarrateTTS on http://localhost:8090..."
 uvicorn app.main:app --host 0.0.0.0 --port 8090 &
 APP_PID=$!

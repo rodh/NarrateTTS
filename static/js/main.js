@@ -8,6 +8,10 @@ import { initRouter, navigate } from './router.js';
 // Inline onclick=/oninput= handlers in index.html call globals, so expose them:
 Object.assign(window, player, library, playlists, settings, home);
 window.navigate = navigate;
+// Both library and home export render(); the only inline caller of render() is the
+// library search box, so window.render must be the library's (Home renders via the
+// router calling home.render() directly).
+window.render = library.render;
 
 document.addEventListener('visibilitychange', () => { if (document.hidden) player.saveProgress(); });
 window.addEventListener('beforeunload', player.saveProgress);

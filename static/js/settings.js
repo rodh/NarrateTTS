@@ -13,7 +13,7 @@ function renderToken() {
     : shortcutToken.slice(0, 6) + '•'.repeat(18) + shortcutToken.slice(-4);
 }
 
-async function loadShortcutToken() {
+export async function loadShortcutToken() {
   document.getElementById('settings-endpoint').textContent = location.origin + '/api/shortcut';
   try {
     const data = await api.getToken();

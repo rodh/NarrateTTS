@@ -120,7 +120,8 @@ def count_items():
 
 
 def update_item(item_id: int, **kwargs):
-    allowed = {"status", "audio_path", "error", "duration_seconds", "updated_at", "summary"}
+    allowed = {"status", "audio_path", "error", "duration_seconds", "updated_at",
+               "summary", "title", "text", "word_count"}
     sets = []
     values = []
     for k, v in kwargs.items():

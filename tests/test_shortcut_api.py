@@ -158,3 +158,50 @@ def test_extraction_failure_saves_visible_error_item(client, monkeypatch):
     assert match["source_url"] == "https://paywalled.example/secret"
     assert "403" in (match["error"] or "")
     assert match["title"]  # has a readable title derived from the URL
+
+
+def test_retry_reextracts_and_reprocesses(client, monkeypatch):
+    """Retrying an extraction-failure item re-extracts, clears the error, fills in
+    the content, and moves it back to processing."""
+    import app.main as main
+
+    async def _boom(url):
+        raise RuntimeError("Client error '403 Forbidden'")
+
+    monkeypatch.setattr(main, "extract_from_url", _boom)
+    err = client.post("/api/convert", json={"url": "https://x.example/a"}).json()
+    assert err["status"] == "error"
+
+    async def _ok(url):
+        return {"title": "Recovered Article", "text": "Now it works fine."}
+
+    monkeypatch.setattr(main, "extract_from_url", _ok)
+    r = client.post(f"/api/items/{err['id']}/retry")
+    assert r.status_code == 200
+    assert r.json()["status"] == "processing"
+
+    item = client.get(f"/api/items/{err['id']}").json()
+    assert item["status"] == "processing"
+    assert item["title"] == "Recovered Article"
+    assert (item["error"] or "") == ""
+    assert item["word_count"] == 4
+
+
+def test_retry_failure_stays_error(client, monkeypatch):
+    import app.main as main
+
+    async def _boom(url):
+        raise RuntimeError("Client error '403 Forbidden'")
+
+    monkeypatch.setattr(main, "extract_from_url", _boom)
+    err = client.post("/api/convert", json={"url": "https://x.example/a"}).json()
+    r = client.post(f"/api/items/{err['id']}/retry")
+    assert r.status_code == 200
+    assert r.json()["status"] == "error"
+    item = client.get(f"/api/items/{err['id']}").json()
+    assert item["status"] == "error"
+    assert "403" in (item["error"] or "")
+
+
+def test_retry_missing_item_404(client):
+    assert client.post("/api/items/999999/retry").status_code == 404

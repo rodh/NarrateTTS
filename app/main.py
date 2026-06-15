@@ -20,7 +20,7 @@ from app.db import (
 )
 from app.feed import generate_feed, generate_opml, get_base_url
 from app.shortcuts import build_shortcut_plist, serialize_plist, sign_shortcut
-from app.extractor import extract_from_url, extract_from_text
+from app.extractor import extract_from_url, extract_from_text, title_from_url
 from app.summarizer import generate_summary
 from app.categorizer import categorize_item
 
@@ -68,7 +68,11 @@ async def _create_conversion(url: str | None, text_input: str | None, voice: str
         try:
             extracted = await extract_from_url(url)
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to extract content: {str(e)}")
+            # Don't silently drop: save a visible error item so it can be seen
+            # (and retried/deleted) in the library instead of vanishing.
+            item_id = add_item(source_url=url, title=title_from_url(url), text="", status="error")
+            update_item(item_id, error=f"Couldn't extract content: {str(e)}")
+            return {"id": item_id, "status": "error"}
     elif text_input:
         extracted = extract_from_text(text_input)
     else:

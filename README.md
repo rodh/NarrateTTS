@@ -23,6 +23,23 @@ set via `TTS_SERVICE_URL` (default `http://macstudio1.lab:8203`).
 2. **Poll** job status until it's complete
 3. **Play** the generated MP3 in your browser
 
+## Capture from your phone (iOS Shortcut)
+
+NarrateTTS can capture straight from the iOS Share Sheet:
+
+1. Open NarrateTTS in **Safari on your iPhone**.
+2. Tap the **gear icon → Add to iPhone**. iOS installs the *Send to NarrateTTS*
+   shortcut (the API token is baked in — no setup).
+3. From any app, **Share → Send to NarrateTTS** to narrate a link or selected text.
+
+The shortcut POSTs to the token-gated `POST /api/shortcut`. If you ever need to
+rotate the token, use **Regenerate token** in the gear panel, then re-add the
+shortcut on your phone.
+
+> The "Add to iPhone" install signs the shortcut via the macOS `shortcuts` CLI, so
+> the server must run on macOS for one-tap install. On other platforms the file is
+> served unsigned (requires Settings → Shortcuts → *Allow Untrusted Shortcuts*).
+
 ## Available Voices
 
 | Voice | ID |
